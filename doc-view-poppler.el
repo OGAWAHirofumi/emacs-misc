@@ -49,7 +49,8 @@
        ;; rename temporary name to target name
        (let ((re (if page
 		     (format "%s-0*%d\\.png" name page)
-		   (concat name "-[0-9]+\\.png"))))
+		   (concat name "-[0-9]+\\.png")))
+	     (case-fold-search nil))
 	 (save-match-data
 	   (dolist (file (directory-files dir t re))
 	     (when (string-match (concat name "-0*\\([0-9]+\\)\\.png") file)
