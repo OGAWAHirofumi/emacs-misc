@@ -32,6 +32,8 @@
 
 ;;; Code:
 
+(require 'doc-view)
+
 (defvar doc-view-poppler-program "pdftocairo")
 
 (defun doc-view-pdf->png-converter-poppler (pdf png page callback)
