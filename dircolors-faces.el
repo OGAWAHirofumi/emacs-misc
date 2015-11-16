@@ -56,6 +56,7 @@
 
 (defgroup dircolors nil
   "Dircolors faces."
+  :prefix "dircolors-"
   :version "25.1"
   :group 'dircolors)
 

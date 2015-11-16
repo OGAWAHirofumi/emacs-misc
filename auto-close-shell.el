@@ -36,6 +36,7 @@
 
 (defgroup auto-close-shell nil
   "Auto close shell."
+  :prefix "auto-close-shell-"
   :version "25.1"
   :group 'auto-close-shell)
 

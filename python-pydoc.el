@@ -34,6 +34,7 @@
 
 (defgroup python-pydoc nil
   "Python pydoc."
+  :prefix "python-pydoc-"
   :version "25.1"
   :group 'python-pydoc)
 
