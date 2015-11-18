@@ -24,7 +24,7 @@
 ;;
 ;; (add-hook 'python-mode-hook
 ;;	  (lambda ()
-;;	    (require 'python-pydoc)
+;;	    (autoload 'python-pydoc "python-pydoc" nil t)
 ;;	    (define-key python-mode-map "\C-ho" 'python-pydoc)))
 
 ;;; Code:

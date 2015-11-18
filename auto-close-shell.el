@@ -29,7 +29,7 @@
 ;;
 ;; or
 ;;
-;; (require 'auto-close-shell)
+;; (autoload 'auto-close-shell "auto-close-shell" nil t)
 ;; (global-set-key "\C-cs" 'auto-close-shell)
 
 ;;; Code:
