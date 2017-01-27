@@ -48,7 +48,7 @@
 
 ;;;###autoload
 (defun python-pydoc (symbol)
-  "Run `pydoc' on WORD."
+  "Run `pydoc' on SYMBOL."
   (interactive
    (let ((default (python-eldoc--get-symbol-at-point)))
      (list (read-string (format "Describe symbol%s: "

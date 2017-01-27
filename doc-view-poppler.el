@@ -37,6 +37,9 @@
 (defvar doc-view-poppler-program "pdftocairo")
 
 (defun doc-view-pdf->png-converter-poppler (pdf png page callback)
+  "Convert PDF to PNG by using `doc-view-poppler-program'.
+If PAGE is non-nil, convert only specified page.  CALLBACK is
+callback for caller."
   (let* ((path (expand-file-name png))
 	 (dir (file-name-directory path))
 	 (name "poppler-page"))

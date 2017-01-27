@@ -81,7 +81,7 @@ For example, `dired-symlink-face'."
 (defvar dircolors-ext-table (make-hash-table :test 'equal))
 
 (defun dircolors-make-tables (ls-colors)
-  "Parse LS_COLORS string, then add to maps."
+  "Parse LS-COLORS string, then add to maps."
   (let ((wsp split-string-default-separators)
 	code-str color-str)
     (dolist (str (split-string ls-colors ":" t wsp))
@@ -115,6 +115,7 @@ For example, `dired-symlink-face'."
     (ansi-color--find-face (gethash ext dircolors-ext-table))))
 
 (defun dircolors-run-dircolors ()
+  "Get dircolors output for xterm."
   (shell-command-to-string
    "eval $(TERM=xterm dircolors -b) && echo $LS_COLORS"))
 
@@ -133,6 +134,9 @@ For example, `dired-symlink-face'."
 
 ;; make (match-string 1, 2, and 3) to match symlink source/target
 (defun dircolors-match-symlink (limit)
+  "Matcher for symlink by using `font-lock-keywords'.
+1 is source filename, 2 is arrow, 3 is target filename in (match-string).
+Argument LIMIT limits search."
   (let* ((start (dired-move-to-filename))
 	 (end (dired-move-to-end-of-filename t))
 	 source arrow target)
@@ -159,7 +163,9 @@ For example, `dired-symlink-face'."
   dired-symlink-face)
 
 (defun dircolors-get-symlink-face (for-target)
-  "Return face for symlink or symlink target."
+  "Return face for symlink or symlink target.
+If FOR-TARGET is non-nil, return the face for target filename.
+Otherwise source filename."
   (save-match-data
     ;; Get correct name from dired, not regexp search.
     (let* ((name (dired-get-filename t t))
@@ -181,13 +187,13 @@ For example, `dired-symlink-face'."
 	(ansi-color--find-face colors)))))
 
 (defun dircolors-make-fmt-keyword (fmt code)
-  "Make font-lock-keywords MATCHER for file type.
+  "Make `font-lock-keywords' matcher for file type.
 FMT is file type provided by ls, CODE is dircolors code."
   (list (concat dired-re-maybe-mark dired-re-inode-size fmt "[^:]")
 	`(".+" (dired-move-to-filename) nil (0 (dircolors-get-face ,code)))))
 
 (defun dircolors-make-perm-keyword (perm code)
-  "Make font-lock-keywords MATCHER for permission.
+  "Make `font-lock-keywords' matcher for permission.
 PERM is permission provided by ls, CODE is dircolors code."
   (list (concat dired-re-maybe-mark dired-re-inode-size perm)
 	`(".+" (dired-move-to-filename) nil (0 (dircolors-get-face ,code)))))
@@ -251,15 +257,14 @@ PERM is permission provided by ls, CODE is dircolors code."
   )
 
 (defun dircolors-insert-before (key alist &rest sequences)
-  "Insert SEQUENCES into ALIST at position before KEY.
+  "At position before KEY on ALIST, insert SEQUENCES into.
 Return inserted the result of alist.
 The last argument may not copied, may used as the tail of the new list.
 
     (setq x1 \\='((\"foo\" 1) (\"bar\" 2) (\"baz\" 3)))
     (setq x2 \\='((\"foo1\" 4) (\"bar2\" 5)))
     (dircolors-insert-before \"bar\" x1 x2)
-    => ((\"foo\" 1) (\"foo1\" 4) (\"bar2\" 5) (\"bar\" 2) (\"baz\" 3))
-"
+    => ((\"foo\" 1) (\"foo1\" 4) (\"bar2\" 5) (\"bar\" 2) (\"baz\" 3))"
   (if (equal key (caar alist))
       ;; Easy case, just append all
       (append (apply 'append sequences) alist)
@@ -277,7 +282,7 @@ The last argument may not copied, may used as the tail of the new list.
 	  (append new-alist (apply 'append sequences) after))))))
 
 (defvar dircolors-dired-font-lock-keywords dired-font-lock-keywords
-  "Original `dired-font-lock-keywords'")
+  "Original `dired-font-lock-keywords'.")
 
 ;; This is fragile against modification of dired.el though, this would
 ;; be realistic and better off than copying from dired.el.

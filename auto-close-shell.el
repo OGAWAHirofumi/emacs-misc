@@ -46,7 +46,8 @@
   :group 'auto-close-shell)
 
 (defun auto-close-shell-sentinel (process event)
-  "When shell exit, kill buffer and window."
+  "When shell PROCESS exit, kill buffer and window.
+PROCESS and EVENT are to used to call original sentinel."
   (let ((sentinel (process-get process 'auto-close-shell-original-sentinel))
 	(buffer (process-buffer process))
 	had-window)
@@ -69,7 +70,7 @@
 
 ;;;###autoload
 (defun auto-close-shell (&rest args)
-  "Setup shell, then add sentinel chain to shell process."
+  "Setup shell with ARGS arguments, then add sentinel chain to shell process."
   (interactive)
   (let* ((buffer (call-interactively #'shell args))
 	 (process (get-buffer-process buffer))

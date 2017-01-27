@@ -64,8 +64,8 @@ this has no effect."
     ("%E" . (and buffer-file-name (file-name-sans-extension buffer-file-name)))
     )
   "Alist of converters used for `temp-compile-template-alist'.
-Each element is (KEY . VALUE). KEY is string of the conversion
-specifier to replace by the result of VALUE. VALUE is cons,
+Each element is (KEY . VALUE).  KEY is string of the conversion
+specifier to replace by the result of VALUE.  VALUE is cons,
 function, symbol, or string to provide replacer string.")
 
 (defvar temp-compile-template-alist
@@ -89,9 +89,9 @@ function, symbol, or string to provide replacer string.")
      . (if (not makefile-p) "emacs -batch -Q -L . -f batch-byte-compile %f"))
     )
   "Commands template to use by `temp-compile'.
-Each element is (KEY . VALUE). KEY is t, symbol to compare with
+Each element is (KEY . VALUE).  KEY is t, symbol to compare with
 `major-mode', string to match filename by using `dired-glob-regexp',
-or cons to check match. VALUE provides compile string.
+or cons to check match.  VALUE provides compile string.
 
 In cons, it can use the special value makefile-p to check if
 makefile is exists for convenience.
@@ -123,7 +123,7 @@ inserted to history to be used by `compile'.")
     result))
 
 (defun temp-compile-expand (line)
-  "Expend conversion specifiers used by on `temp-compile-conversion-alist'."
+  "Expend LINE conversion specifiers by using `temp-compile-conversion-alist'."
   (let* ((percent-fmt '("%%" . "%"))
 	 (alist (append (list percent-fmt) temp-compile-conversion-alist))
 	 (case-fold-search nil)
@@ -144,7 +144,7 @@ inserted to history to be used by `compile'.")
     line))
 
 (defun temp-compile-template-eval (template lexical)
-  "Evaluate TEMPLATE, then returns result."
+  "Evaluate TEMPLATE with LEXICAL environment, then return result."
   (let ((key (car template)))
     (when (cond ((symbolp key)
 		 (or (eq key t) (eq key major-mode)))
@@ -210,7 +210,7 @@ inserted to history to be used by `compile'.")
 
 (defun temp-compile-buffer-name (name-of-mode)
   (save-match-data
-    ;; Remove non live buffers    
+    ;; Remove non live buffers
     (setq temp-compile-buffers
 	  (temp-compile-filter #'buffer-live-p temp-compile-buffers))
     ;; Choice buffer name is not running, or new buffer name
