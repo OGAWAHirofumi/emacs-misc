@@ -51,6 +51,8 @@
 
 ;;; Code:
 
+(eval-when-compile (require 'subr-x))
+(require 'seq)
 (require 'dired)
 (require 'ansi-color)
 
@@ -132,6 +134,24 @@ For example, `dired-symlink-face'."
 ;; dired font-lock helpers
 ;;
 
+(defconst dircolors-modes-code-table
+  '(
+    ;; STICKY_OTHER_WRITABLE type
+    ("d[-r][-w].[-r][-w].[-r]w[tT]" "tw")
+    ;; OTHER_WRITABLE type
+    ("d[-r][-w].[-r][-w].[-r]w." "ow")
+    ;; STICKY type
+    ("d[-r][-w].[-r][-w].[-r].[tT]" "st")
+    ;; SETUID type
+    ("-[-r][-w][sS][-r][-w].[-r][-w]." "su")
+    ;; SETGID type
+    ("-[-r][-w].[-r][-w][sS][-r][-w]." "sg")
+    ;; CAPABILITY is unsupported
+    ))
+
+(defconst dircolors-type-code-table '(("-" "fi") ("d" "di") ("p" "pi")
+				      ("s" "so") ("b" "bd") ("c" "cd")))
+
 ;; make (match-string 1, 2, and 3) to match symlink source/target
 (defun dircolors-match-symlink (limit)
   "Matcher for symlink by using `font-lock-keywords'.
@@ -157,10 +177,46 @@ Argument LIMIT limits search."
       (set-match-data (append '(nil nil) source arrow target))
       t)))
 
-(defun dircolors-get-target-symlink-face (_name)
-  "Return face based on type of dereferenced symlink."
-  ;; FIXME: should check target type
-  dired-symlink-face)
+(defun dircolors-find-face (name)
+  "Return dircolors face for NAME."
+  (when (file-symlink-p name)
+    (error "Symlink should be handled in `dircolors-get-symlink-face'"))
+  (let* ((attrs (file-attributes name))
+	 (modes (file-attribute-modes attrs)))
+    (save-match-data
+      (cond
+       ((null modes)
+	dired-symlink-face)
+
+       ;; special modes are handled here
+       ((when-let ((found (seq-find (lambda (x)
+				      (string-match (nth 0 x) modes))
+				    dircolors-modes-code-table)))
+	  (dircolors-get-face (nth 1 found))))
+
+       ;; EXEC type
+       ((string-match dired-re-exe (concat "  " modes))
+	(dircolors-get-face "ex"))
+       ;; MULTIHARDLINK is unsupported
+
+       ;; If not colored, based on file type (DIR/FIFO/SOCK/BLOCK/CHR)
+       ;; DOOR is unsupported
+       ((when-let ((found (seq-find (lambda (x)
+				      (string-prefix-p (nth 0 x) modes))
+				    dircolors-type-code-table)))
+	  (dircolors-get-face (nth 1 found))))
+
+       ;; extension base coloring
+       ((string-match (concat ".+" (dircolors-ext-re)) name)
+	(dircolors-ext-get-face (match-string 1 name)))
+
+       (t
+	dired-symlink-face)))))
+
+(defun dircolors-get-target-symlink-face (name)
+  "Return face for NAME based on type of dereferenced symlink."
+  (let ((truename (file-truename name)))
+    (dircolors-find-face truename)))
 
 (defun dircolors-get-symlink-face (for-target)
   "Return face for symlink or symlink target.
@@ -192,10 +248,10 @@ FMT is file type provided by ls, CODE is dircolors code."
   (list (concat dired-re-maybe-mark dired-re-inode-size fmt "[^:]")
 	`(".+" (dired-move-to-filename) nil (0 (dircolors-get-face ,code)))))
 
-(defun dircolors-make-perm-keyword (perm code)
-  "Make `font-lock-keywords' matcher for permission.
-PERM is permission provided by ls, CODE is dircolors code."
-  (list (concat dired-re-maybe-mark dired-re-inode-size perm)
+(defun dircolors-make-modes-keyword (modes-re &optional code)
+  "Make `font-lock-keywords' matcher for modes.
+MODES-RE is modes provided by ls, CODE is dircolors code."
+  (list (concat dired-re-maybe-mark dired-re-inode-size modes-re)
 	`(".+" (dired-move-to-filename) nil (0 (dircolors-get-face ,code)))))
 
 (defun dircolors-ext-re ()
@@ -216,19 +272,11 @@ PERM is permission provided by ls, CODE is dircolors code."
 			      (3 (dircolors-get-symlink-face t))))
 
     ;; DIR are handled by dired basically
-    ;; STICKY_OTHER_WRITABLE type
-    ,(dircolors-make-perm-keyword "d[-r][-w].[-r][-w].[-r]w[tT]" "tw")
-    ;; OTHER_WRITABLE type
-    ,(dircolors-make-perm-keyword "d[-r][-w].[-r][-w].[-r]w." "ow")
-    ;; STICKY type
-    ,(dircolors-make-perm-keyword "d[-r][-w].[-r][-w].[-r].[tT]" "st")
+    ;; special modes are handled here
+    ,@(mapcar (lambda (x)
+		(dircolors-make-modes-keyword (car x) (cadr x)))
+	      dircolors-modes-code-table)
 
-    ;; Regular file details
-    ;; SETUID type
-    ,(dircolors-make-perm-keyword "-[-r][-w][sS][-r][-w].[-r][-w]." "su")
-    ;; SETGID type
-    ,(dircolors-make-perm-keyword "-[-r][-w].[-r][-w][sS][-r][-w]." "sg")
-    ;; CAPABILITY is unsupported
     ;; EXEC type
     (,dired-re-exe (".+" (dired-move-to-filename) nil
 		    (0 (dircolors-get-face "ex"))))
@@ -236,12 +284,10 @@ PERM is permission provided by ls, CODE is dircolors code."
 
     ;; If not colored, based on file type (DIR/FIFO/SOCK/BLOCK/CHR)
     ;; DOOR is unsupported
-    ,@(mapcar (lambda (arg)
-		(dircolors-make-fmt-keyword (car arg) (cadr arg)))
-	      '(("-" "fi") ("d" "di") ("p" "pi")
-		("s" "so") ("b" "bd") ("c" "cd")))
-    )
-  )
+    ,@(mapcar (lambda (x)
+		(dircolors-make-fmt-keyword (car x) (cadr x)))
+	      dircolors-type-code-table)
+    ))
 
 (defvar dircolors-ext-font-lock-keywords
   `(
