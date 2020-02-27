@@ -38,10 +38,10 @@
   :version "25.1"
   :group 'python-pydoc)
 
-(defcustom python-pydoc-program 'auto
+(defcustom python-pydoc-program 'guess
   "Program used by `python-pydoc' to produce help."
-  :type '(choice (const auto :tag "Set by shebang")
-		 (string :tag "python command"))
+  :type '(choice (const guess :tag "Guess from shebang")
+		 (string :tag "pydoc command"))
   :group 'python-pydoc)
 
 (defvar python-pydoc-history nil
@@ -69,19 +69,17 @@
 				    (format "(default %s)" default)
 				  ""))
                         nil 'python-pydoc-history default))))
-  (when (null python-pydoc-use-program)
-    (setq python-pydoc-use-program (if (stringp python-pydoc-program)
-				       python-pydoc-program
-				     (python-pydoc-decide-program))))
+  (when (not (stringp python-pydoc-program))
+    (setq python-pydoc-program (python-pydoc-decide-program)))
   (when (string= symbol "")
     (user-error "No pydoc args given"))
   (let ((Man-switches "")
-	(manual-program python-pydoc-use-program))
+	(manual-program python-pydoc-program))
     (Man-getpage-in-background symbol)))
 
 ;;;###autoload
 (defun python-pydoc-at-point ()
-  "Run a `perldoc' on the word around point."
+  "Run a `pydoc' on the word around point."
   (interactive)
   (python-pydoc (python-eldoc--get-symbol-at-point)))
 
