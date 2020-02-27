@@ -38,13 +38,26 @@
   :version "25.1"
   :group 'python-pydoc)
 
-(defcustom python-pydoc-program "pydoc"
+(defcustom python-pydoc-program 'auto
   "Program used by `python-pydoc' to produce help."
-  :type 'string
+  :type '(choice (const auto :tag "Set by shebang")
+		 (string :tag "python command"))
   :group 'python-pydoc)
 
 (defvar python-pydoc-history nil
   "`python-pydoc' read history.")
+
+(defvar-local python-pydoc-use-program nil)
+
+(defun python-pydoc-decide-program ()
+  "Return pydoc command name from shebang."
+  (let ((shebang (save-excursion
+		   (goto-char (point-min))
+		   (when (looking-at auto-mode-interpreter-regexp)
+		     (match-string 2)))))
+    (if (and shebang (string-match "python\\([0-9]+\\)?" shebang))
+	(concat "pydoc" (match-string 1 shebang))
+      "pydoc3")))
 
 ;;;###autoload
 (defun python-pydoc (symbol)
@@ -56,10 +69,14 @@
 				    (format "(default %s)" default)
 				  ""))
                         nil 'python-pydoc-history default))))
+  (when (null python-pydoc-use-program)
+    (setq python-pydoc-use-program (if (stringp python-pydoc-program)
+				       python-pydoc-program
+				     (python-pydoc-decide-program))))
   (when (string= symbol "")
     (user-error "No pydoc args given"))
   (let ((Man-switches "")
-	(manual-program python-pydoc-program))
+	(manual-program python-pydoc-use-program))
     (Man-getpage-in-background symbol)))
 
 ;;;###autoload
