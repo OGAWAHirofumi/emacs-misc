@@ -177,23 +177,25 @@ Argument LIMIT limits search."
       (set-match-data (append '(nil nil) source arrow target))
       t)))
 
-(defun dircolors-find-face (name)
-  "Return dircolors face for NAME."
-  (let* ((attrs (file-attributes name))
-	 (modes (file-attribute-modes attrs)))
+
+(defun dircolors-get-target-symlink-face (name)
+  "Return face for NAME based on type of dereferenced symlink."
+  (let* ((target-name (file-symlink-p name))
+	 ;; file-attributes is nofollow, so using file-truename
+	 (attrs (file-attributes (file-truename name)))
+	 (modes (file-attribute-modes attrs))
+	 found)
     (save-match-data
       (cond
-       ((null modes)
-	dired-symlink-face)
-       ;; symlink is only possible if race after `dircolors-get-symlink-face'
-       ((string-prefix-p "l" modes)
+       ;; file was changed before `file-attributes'
+       ((or (null modes) (string-prefix-p "l" modes))
 	dired-symlink-face)
 
-       ;; special modes are handled here
-       ((when-let ((found (seq-find (lambda (x)
-				      (string-match (nth 0 x) modes))
-				    dircolors-modes-code-table)))
-	  (dircolors-get-face (nth 1 found))))
+       ;; Special modes are handled here
+       ((setq found (seq-find (lambda (x)
+				(string-match (nth 0 x) modes))
+			      dircolors-modes-code-table))
+	(dircolors-get-face (nth 1 found)))
 
        ;; EXEC type
        ((string-match dired-re-exe (concat "  " modes))
@@ -202,22 +204,21 @@ Argument LIMIT limits search."
 
        ;; If not colored, based on file type (DIR/FIFO/SOCK/BLOCK/CHR)
        ;; DOOR is unsupported
-       ((when-let ((found (seq-find (lambda (x)
-				      (string-prefix-p (nth 0 x) modes))
-				    dircolors-type-code-table)))
-	  (dircolors-get-face (nth 1 found))))
+       ((setq found (seq-find (lambda (x)
+				(string-prefix-p (nth 0 x) modes))
+			      dircolors-type-code-table))
+	(cond
+	 ;; If regular file, try extension base coloring
+	 ((and (string= (nth 0 found) "-")
+	       target-name
+	       (string-match (concat ".+" (dircolors-ext-re)) target-name))
+	  (dircolors-ext-get-face (match-string 1 target-name)))
 
-       ;; extension base coloring
-       ((string-match (concat ".+" (dircolors-ext-re)) name)
-	(dircolors-ext-get-face (match-string 1 name)))
+	 (t
+	  (dircolors-get-face (nth 1 found)))))
 
        (t
 	dired-symlink-face)))))
-
-(defun dircolors-get-target-symlink-face (name)
-  "Return face for NAME based on type of dereferenced symlink."
-  (let ((truename (file-truename name)))
-    (dircolors-find-face truename)))
 
 (defun dircolors-get-symlink-face (for-target)
   "Return face for symlink or symlink target.
