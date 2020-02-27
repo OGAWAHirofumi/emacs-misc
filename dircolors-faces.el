@@ -179,13 +179,14 @@ Argument LIMIT limits search."
 
 (defun dircolors-find-face (name)
   "Return dircolors face for NAME."
-  (when (file-symlink-p name)
-    (error "Symlink should be handled in `dircolors-get-symlink-face'"))
   (let* ((attrs (file-attributes name))
 	 (modes (file-attribute-modes attrs)))
     (save-match-data
       (cond
        ((null modes)
+	dired-symlink-face)
+       ;; symlink is only possible if race after `dircolors-get-symlink-face'
+       ((string-prefix-p "l" modes)
 	dired-symlink-face)
 
        ;; special modes are handled here
