@@ -166,6 +166,11 @@ If N is positive, N times next.  If N is negative N times previous."
      (buffer-substring (caar range) (line-end-position))
      " +")))
 
+(defun tracker-result-dired ()
+  "In tracker result, visit the directory that contain the this result."
+  (interactive)
+  (dired (file-name-directory (tracker-file-path-at-point (point)))))
+
 (defun tracker-result-find-file ()
   "In tracker result, visit the file or directory named on this result."
   (interactive)
@@ -200,6 +205,7 @@ the list of file names explicitly with the FILE-LIST argument."
     (define-key map "p"	'tracker-result-prev)
     (define-key map "n"	'tracker-result-next)
     (define-key map "!"	'tracker-result-run-shell-command)
+    (define-key map "d" 'tracker-result-dired)
     (define-key map "e" 'tracker-result-find-file)
     (define-key map "f" 'tracker-result-find-file)
     (define-key map "\C-m" 'tracker-result-find-file)
