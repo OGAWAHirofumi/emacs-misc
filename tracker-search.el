@@ -61,6 +61,14 @@
   "ANSI escape sequences to mark the end of search words."
   :type 'string)
 
+(defcustom tracker-snippet-ellipsis (if (char-displayable-p ?…) "…" "...")
+  "The ellipsis character for the snippet of content."
+  :type 'string)
+
+(defcustom tracker-snippet-words 10
+  "The number of words for the snippet of content."
+  :type 'integer)
+
 (defsubst tracker-dbus-call (method &rest args)
   "Call the tracker method METHOD with ARGS over dbus."
   (apply #'dbus-call-method
@@ -82,7 +90,12 @@
 	   " tracker:coalesce(nie:url(?f), ?f)"
 	   " nie:title(?f)"
 	   " nie:mimeType(?f)"
-	   " fts:snippet(?f, \"" tracker-snippet-begin "\", \"" tracker-snippet-end "\")"
+	   " fts:snippet(?f"
+	   ", \"" tracker-snippet-begin "\""
+	   ", \"" tracker-snippet-end "\""
+	   ", \"" tracker-snippet-ellipsis "\""
+	   ", " (number-to-string tracker-snippet-words)
+	   ")"
 	   " WHERE {"
 	   "  ?f fts:match \"" (tracker-escape-query query) "\" ."
 	   "  ?f tracker:available true ."
