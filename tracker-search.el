@@ -25,8 +25,8 @@
 ;;; Code:
 
 (require 'subr-x)
+(require 'text-property-search)
 (require 'dbus)
-(require 'rtree)
 (require 'ansi-color)
 (require 'dired-aux)
 
@@ -106,77 +106,93 @@
   (string-trim-left url "file://"))
 
 (defvar-local tracker-search-query-string nil)
-(defvar-local tracker-result-rtree nil)
 
 (defun tracker-insert-results (results)
   "Insert the result of tracker search RESULTS."
-  (mapcar (lambda (x)
-	    (let ((pos (point))
-		  (path (propertize (tracker-file-path (nth 0 x))
-				    'font-lock-face 'tracker-path-face))
-		  (title (propertize (if (string= (nth 1 x) "")
-					 "No title"
-				       (nth 1 x))
-				     'font-lock-face 'tracker-title-face))
-		  (mime (and (nth 2 x)
-			     (propertize (nth 2 x)
-					 'font-lock-face 'tracker-mime-face)))
-		  (snippet (and (nth 3 x)
-				(propertize (ansi-color-apply (nth 3 x)))))
-		  (path-prefix "")
-		  (detail-prefix "  "))
-	      (insert path-prefix path "\n")
-	      (when (and mime (memq 'mime tracker-search-details))
-		(insert detail-prefix mime "\n"))
-	      (when (memq 'title tracker-search-details)
-		(insert detail-prefix title "\n"))
-	      (when (and snippet (memq 'snippet tracker-search-details))
-		(mapc (lambda (x)
-			(insert detail-prefix x "\n"))
-		      (split-string snippet "\n"))
-		(insert "\n"))
-	      (cons pos (- (point) 1))))
-	  results))
+  (mapc (lambda (x)
+	  (let* ((path-prefix "")
+		 (detail-prefix "  ")
+		 (path (propertize (tracker-file-path (nth 0 x))
+				   'font-lock-face 'tracker-path-face
+				   'tracker-path t))
+		 (title (and (memq 'title tracker-search-details)
+			     (propertize (if (string= (nth 1 x) "")
+					     "No title"
+					   (nth 1 x))
+					 'font-lock-face 'tracker-title-face
+					 'tracker-title t)))
+		 (mime (and (memq 'mime tracker-search-details)
+			    (nth 2 x)
+			    (propertize (nth 2 x)
+					'font-lock-face 'tracker-mime-face
+					'tracker-mime t)))
+		 (snippet (and (memq 'snippet tracker-search-details)
+			       (nth 3 x)
+			       (propertize
+				(mapconcat (lambda (x)
+					     (concat detail-prefix x "\n"))
+					   (split-string
+					    (ansi-color-apply (nth 3 x))
+					    "\n")
+					   "")
+				'tracker-snippet t))))
+	    (insert path-prefix path "\n")
+	    (when mime
+	      (insert detail-prefix mime "\n"))
+	    (when title
+	      (insert detail-prefix title "\n"))
+	    (when snippet
+	      (insert snippet "\n"))))
+	results))
 
-(defun tracker-result-find-range (pos &optional n)
-  "Find the range at the position POS.
+(defun tracker-result-find-prop (pos prop &optional n)
+  "Find the start position of PROP near the position POS.
 If N is positive, N times next.  If N is negative N times previous."
   (or n (setq n 0))
-  (let ((range (rtree-memq tracker-result-rtree pos)))
-    (while (and range (/= n 0))
-      (if (> n 0)
-	  (setq pos (1+ (cdar range))
-		n (1- n))
-	(setq pos (1- (caar range))
-	      n (1+ n)))
-      (setq range (rtree-memq tracker-result-rtree pos)))
-    range))
+  (save-excursion
+    (let ((match t))
+      (goto-char pos)
+      (when (get-text-property pos prop)
+	(when-let ((prev (previous-single-property-change pos prop)))
+	  (goto-char prev))
+	(setq match (text-property-search-forward prop t t nil)))
+      (while (and match (/= n 0))
+	(setq match (if (> n 0)
+			(text-property-search-forward prop t t t)
+		      (text-property-search-backward prop t t t)))
+	(setq n (if (> n 0)
+		    (1- n)
+		  (1+ n))))
+      (if (prop-match-p match)
+	  match
+	nil))))
 
 (defun tracker-result-prev (arg)
   "Move cursor to a previous search result ARG times."
   (interactive "p")
   (or arg (setq arg 1))
-  (let ((range (tracker-result-find-range (point) (- arg))))
+  (let ((range (tracker-result-find-prop (point) 'tracker-path (- arg))))
     (when range
-      (goto-char (caar range))
+      (goto-char (prop-match-beginning range))
       (recenter))))
 
 (defun tracker-result-next (arg)
   "Move cursor to a next search result ARG times."
   (interactive "p")
   (or arg (setq arg 1))
-  (let ((range (tracker-result-find-range (point) arg)))
+  (let ((range (tracker-result-find-prop (point) 'tracker-path arg)))
     (when range
-      (goto-char (caar range))
+      (goto-char (prop-match-beginning range))
       (recenter))))
 
 (defun tracker-file-path-at-point (pos)
   "Return the path of result for position POS."
-  (let ((range (tracker-result-find-range pos)))
+  (let ((range (or (tracker-result-find-prop pos 'tracker-path 0)
+		   (tracker-result-find-prop pos 'tracker-path -1))))
     (when (null range)
       (user-error "Tracker result is not found"))
     (string-trim-left
-     (buffer-substring (caar range) (line-end-position))
+     (buffer-substring (prop-match-beginning range) (prop-match-end range))
      " +")))
 
 (defun tracker-result-dired ()
@@ -245,15 +261,13 @@ the list of file names explicitly with the FILE-LIST argument."
     (if (null results)
 	(message "No hit: %s" query)
       (with-current-buffer buffer
-	(let ((inhibit-read-only t)
-	      result-pos)
+	(let ((inhibit-read-only t))
 	  (buffer-disable-undo)
 	  (erase-buffer)
-	  (setq result-pos (tracker-insert-results results))
+	  (tracker-insert-results results)
 	  (set-buffer-modified-p nil)
 	  (tracker-result-mode)
-	  (setq-local tracker-search-query-string query)
-	  (setq-local tracker-result-rtree (rtree-make result-pos))))
+	  (setq-local tracker-search-query-string query)))
       (select-window (display-buffer buffer)))))
 
 (provide 'tracker-search)
