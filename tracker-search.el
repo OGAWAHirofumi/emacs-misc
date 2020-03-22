@@ -29,6 +29,7 @@
 (require 'dbus)
 (require 'ansi-color)
 (require 'dired-aux)
+(require 'thingatpt)
 
 (defgroup tracker-search nil
   "Interface for the tracker search."
@@ -252,10 +253,18 @@ the list of file names explicitly with the FILE-LIST argument."
   (auto-fill-mode -1)
   (goto-char (point-min)))
 
+(defvar tracker-search-history nil)
+
 ;;;###autoload
 (defun tracker-search (query)
   "Search QUERY text by tracker full text search."
-  (interactive "sTracker Search: ")
+  (interactive (list
+		(let ((word (thing-at-point 'word))
+		      (prompt "Tracker Search"))
+		  (read-string
+		   (format "%s%s: " prompt
+			   (if word (format " (default \"%s\")" word) ""))
+		   nil 'tracker-search-history word))))
   (let ((results (tracker-search-fts query))
 	(buffer (get-buffer-create "*Tracker Result*")))
     (if (null results)
