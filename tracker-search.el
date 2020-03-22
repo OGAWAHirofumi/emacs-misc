@@ -259,7 +259,7 @@ the list of file names explicitly with the FILE-LIST argument."
 (defun tracker-search (query)
   "Search QUERY text by tracker full text search."
   (interactive (list
-		(let ((word (thing-at-point 'word))
+		(let ((word (thing-at-point 'word t))
 		      (prompt "Tracker Search"))
 		  (read-string
 		   (format "%s%s: " prompt
