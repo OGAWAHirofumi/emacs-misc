@@ -220,6 +220,15 @@ Argument LIMIT limits search."
        (t
 	dired-symlink-face)))))
 
+(defun dircolors-linkok-p (name)
+  "Check if the target file of symlink NAME is exists or not.
+`file-exists-p' uses faccessat(), but it fails on some cases (e.g. procfs)."
+  (let* ((path (expand-file-name name))
+	 (default-directory (file-name-directory path))
+	 (target (and path (file-symlink-p path))))
+    (when target
+      (numberp (file-modes target)))))	; deref symlink by stat(2)
+
 (defun dircolors-get-symlink-face (for-target)
   "Return face for symlink or symlink target.
 If FOR-TARGET is non-nil, return the face for target filename.
@@ -227,7 +236,7 @@ Otherwise source filename."
   (save-match-data
     ;; Get correct name from dired, not regexp search.
     (let* ((name (dired-get-filename t t))
-	   (exists (and name (file-exists-p name))) ; deref symlink
+	   (exists (dircolors-linkok-p name))
 	   colors)
       ;; choice color by state of symlink
       (if for-target
