@@ -261,10 +261,8 @@ the list of file names explicitly with the FILE-LIST argument."
   (interactive (list
 		(let ((word (thing-at-point 'word t))
 		      (prompt "Tracker Search"))
-		  (read-string
-		   (format "%s%s: " prompt
-			   (if word (format " (default \"%s\")" word) ""))
-		   nil 'tracker-search-history word))))
+		  (read-string (format-prompt prompt word)
+			       nil 'tracker-search-history word))))
   (let ((results (tracker-search-fts query))
 	(buffer (get-buffer-create "*Tracker Result*")))
     (if (null results)
