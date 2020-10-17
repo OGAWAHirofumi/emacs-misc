@@ -34,6 +34,10 @@
 
 ;;; Code:
 
+(eval-when-compile
+  (require 'subr-x))
+(require 'tabulated-list)
+
 (defgroup auto-close-shell nil
   "Auto close shell."
   :prefix "auto-close-shell-"
@@ -45,12 +49,100 @@
   :type 'boolean
   :group 'auto-close-shell)
 
+(defvar auto-close-shell-buffers nil)
+(defvar auto-close-shell-list-buffer "*Shell List*")
+
+(defun auto-close-shell-list--refresh ()
+  "Recompute the list of shell buffer list."
+  (setq tabulated-list-entries nil)
+  (dolist (buffer auto-close-shell-buffers)
+    (let* ((bufname (buffer-name buffer))
+	   (p (get-buffer-process buffer))
+	   (pid  (if (process-id p) (format "%d" (process-id p)) "--"))
+	   (name (process-name p))
+	   (dir (with-current-buffer buffer
+		  (cond
+		   ((buffer-file-name))
+		   ((bound-and-true-p list-buffers-directory))
+		   ((let ((dirname (and (boundp 'dired-directory)
+					(if (stringp dired-directory)
+					    dired-directory
+					  (car dired-directory)))))
+		      (and dirname (expand-file-name dirname)))))))
+	   (status (symbol-name (process-status p)))
+	   (info (format "(%s %s) %s" name status (abbreviate-file-name dir))))
+      (push (list buffer (vector bufname pid info)) tabulated-list-entries)))
+  (tabulated-list-init-header))
+
+(defun auto-close-shell-list-update ()
+  "Update a list in `auto-close-shell-list-buffer'."
+  (when-let ((buffer (get-buffer auto-close-shell-list-buffer)))
+    (with-current-buffer buffer
+      (revert-buffer))))
+
+(defun auto-close-shell-list-select ()
+  "Visit shell buffer at current selected line."
+  (interactive)
+  (when-let ((buffer (tabulated-list-get-id)))
+    (switch-to-buffer buffer)))
+
+(defun auto-close-shell-list-shell ()
+  "Create new shell buffer."
+  (interactive)
+  (ignore-errors
+    (delete-window))
+  (let ((current-prefix-arg '(4)))
+    (call-interactively #'auto-close-shell)))
+
+(defvar auto-close-shell-list-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "\C-m"	'auto-close-shell-list-select)
+    (define-key map "s"		'auto-close-shell-list-shell)
+    map))
+
+(define-derived-mode auto-close-shell-list-mode tabulated-list-mode "Shell List"
+  "Major mode for shell buffer list."
+  (setq tabulated-list-format [("Name" 12 t)
+			       ("PID" 8 t)
+			       ("Info" 40 t)])
+  (setq tabulated-list-sort-key (cons "Name" nil))
+  (add-hook 'tabulated-list-revert-hook 'auto-close-shell-list--refresh nil t))
+
+;;;###autoload
+(defun auto-close-shell-list ()
+  "Display a list of all shell buffers."
+  (interactive)
+  (let ((buffer (get-buffer-create auto-close-shell-list-buffer)))
+    (with-current-buffer buffer
+      (auto-close-shell-list-mode)
+      (auto-close-shell-list--refresh)
+      (tabulated-list-print))
+    ;; find window to display
+    (unless (catch 'done
+	      (dolist (b auto-close-shell-buffers)
+		(when-let ((w (get-buffer-window b)))
+		  (select-window w)
+		  (switch-to-buffer buffer)
+		  (throw 'done t))))
+      (pop-to-buffer buffer))))
+
+(defun auto-close-shell--remember (buffer)
+  "Remember shell buffer BUFFER."
+  (add-to-list 'auto-close-shell-buffers buffer t)
+  (auto-close-shell-list-update))
+
+(defun auto-close-shell--forget (buffer)
+  "Forget shell buffer BUFFER."
+  (setq auto-close-shell-buffers (delete buffer auto-close-shell-buffers))
+  (auto-close-shell-list-update))
+
 (defun auto-close-shell-sentinel (process event)
   "When shell PROCESS exit, kill buffer and window.
 PROCESS and EVENT are to used to call original sentinel."
   (let ((sentinel (process-get process 'auto-close-shell-original-sentinel))
 	(buffer (process-buffer process))
 	had-window)
+    (auto-close-shell--forget buffer)
     ;; call original sentinel
     (funcall sentinel process event)
     ;; start auto close
@@ -72,13 +164,16 @@ PROCESS and EVENT are to used to call original sentinel."
 (defun auto-close-shell (&rest args)
   "Setup shell with ARGS arguments, then add sentinel chain to shell process."
   (interactive)
-  (let* ((buffer (call-interactively #'shell args))
-	 (process (get-buffer-process buffer))
-	 (sentinel (and process (process-sentinel process))))
-    (when (and process (not (eq sentinel 'auto-close-shell-sentinel)))
-      (process-put process 'auto-close-shell-original-sentinel sentinel)
-      (set-process-sentinel process #'auto-close-shell-sentinel))
-    buffer))
+  (if (and (null current-prefix-arg) (> (length auto-close-shell-buffers) 1))
+      (auto-close-shell-list)
+    (let* ((buffer (call-interactively #'shell args))
+	   (process (get-buffer-process buffer))
+	   (sentinel (and process (process-sentinel process))))
+      (when (and process (not (eq sentinel 'auto-close-shell-sentinel)))
+	(process-put process 'auto-close-shell-original-sentinel sentinel)
+	(set-process-sentinel process #'auto-close-shell-sentinel))
+      (auto-close-shell--remember buffer)
+      buffer)))
 
 (provide 'auto-close-shell)
 ;;; auto-close-shell.el ends here
