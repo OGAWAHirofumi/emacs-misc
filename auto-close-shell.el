@@ -94,10 +94,18 @@
   (let ((current-prefix-arg '(4)))
     (call-interactively #'auto-close-shell)))
 
+(defun auto-close-shell-list-quit ()
+  "Quit shell list buffer."
+  (interactive)
+  (bury-buffer)
+  (ignore-errors
+    (delete-window)))
+
 (defvar auto-close-shell-list-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-m"	'auto-close-shell-list-select)
     (define-key map "s"		'auto-close-shell-list-shell)
+    (define-key map "q"		'auto-close-shell-list-quit)
     map))
 
 (define-derived-mode auto-close-shell-list-mode tabulated-list-mode "Shell List"
@@ -118,12 +126,13 @@
       (auto-close-shell-list--refresh)
       (tabulated-list-print))
     ;; find window to display
-    (unless (catch 'done
-	      (dolist (b auto-close-shell-buffers)
-		(when-let ((w (get-buffer-window b)))
-		  (select-window w)
-		  (switch-to-buffer buffer)
-		  (throw 'done t))))
+    (if-let ((window (catch 'done
+		       (dolist (b auto-close-shell-buffers)
+			 (when-let ((w (get-buffer-window b)))
+			   (throw 'done w))))))
+	(progn
+	  (select-window window)
+	  (switch-to-buffer buffer))
       (pop-to-buffer buffer))))
 
 (defun auto-close-shell--remember (buffer)
