@@ -143,31 +143,30 @@
 (defun auto-close-shell--forget (buffer)
   "Forget shell buffer BUFFER."
   (setq auto-close-shell-buffers (delete buffer auto-close-shell-buffers))
+  ;; if remaining only one buffer, kill `auto-close-shell-list-buffer'
+  (when-let ((buffer (and (= 1 (length auto-close-shell-buffers))
+			  (get-buffer auto-close-shell-list-buffer))))
+    (delete-windows-on buffer t)
+    (kill-buffer buffer))
   (auto-close-shell-list-update))
 
 (defun auto-close-shell-sentinel (process event)
   "When shell PROCESS exit, kill buffer and window.
 PROCESS and EVENT are to used to call original sentinel."
   (let ((sentinel (process-get process 'auto-close-shell-original-sentinel))
-	(buffer (process-buffer process))
-	had-window)
+	(buffer (process-buffer process)))
     (auto-close-shell--forget buffer)
     ;; call original sentinel
     (funcall sentinel process event)
     ;; start auto close
     (when (not (process-live-p process))
       ;; close windows first
-      (if (dolist (window (get-buffer-window-list buffer nil t) had-window)
-	    (when (window-live-p window)
-	      (quit-window nil window)
-	      (setq had-window t)))
-	  ;; kill buffer was in window
-	  (and (buffer-live-p buffer)
-	       (kill-buffer buffer))
+      (if-let ((window (get-buffer-window buffer t)))
+	  (progn
+	    (delete-windows-on buffer t)
+	    (kill-buffer buffer))
 	;; kill buffer was not in window (killed in background)
-	(and auto-close-shell-kill-buffer
-	     (buffer-live-p buffer)
-	     (kill-buffer buffer))))))
+	(and auto-close-shell-kill-buffer (kill-buffer buffer))))))
 
 ;;;###autoload
 (defun auto-close-shell (&rest args)
