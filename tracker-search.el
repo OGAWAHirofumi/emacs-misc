@@ -172,7 +172,9 @@ If N is positive, N times next.  If N is negative N times previous."
   "Move cursor to a previous search result ARG times."
   (interactive "p")
   (or arg (setq arg 1))
-  (let ((range (tracker-result-find-prop (point) 'tracker-path (- arg))))
+  (let* ((pos (and (> (point) (point-min)) (1- (point))))
+	 (range (and pos
+		     (tracker-result-find-prop pos 'tracker-path (- arg)))))
     (when range
       (goto-char (prop-match-beginning range))
       (recenter))))
