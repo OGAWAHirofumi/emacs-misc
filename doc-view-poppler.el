@@ -25,7 +25,7 @@
 ;;
 ;; For example,
 ;;
-;; (with-eval-after-load "doc-view"
+;; (with-eval-after-load 'doc-view
 ;;  (require 'doc-view-poppler)
 ;;  (setq doc-view-pdf->png-converter-function
 ;;	#'doc-view-pdf->png-converter-poppler))
