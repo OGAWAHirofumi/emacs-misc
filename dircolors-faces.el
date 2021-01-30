@@ -178,11 +178,15 @@ Argument LIMIT limits search."
       t)))
 
 
-(defun dircolors-get-target-symlink-face (name)
-  "Return face for NAME based on type of dereferenced symlink."
-  (let* ((target-name (file-symlink-p name))
+(defun dircolors-get-target-symlink-face (path &optional target-name
+					       target-truename)
+  "Return face for PATH based on type of dereferenced symlink.
+If TARGET-NAME and TARGET-TRUENAME are non-nil, it should be the
+cache of (file-symlink-p path) and (file-truename path)."
+  (let* ((target-name (or target-name (file-symlink-p path)))
+	 (target-truename (or target-truename (file-truename path)))
 	 ;; file-attributes is nofollow, so using file-truename
-	 (attrs (file-attributes (file-truename name)))
+	 (attrs (file-attributes target-truename))
 	 (modes (file-attribute-modes attrs))
 	 found)
     (save-match-data
@@ -220,14 +224,16 @@ Argument LIMIT limits search."
        (t
 	dired-symlink-face)))))
 
-(defun dircolors-linkok-p (name)
-  "Check if the target file of symlink NAME is exists or not.
+(defun dircolors-linkok-p (path)
+  "Check if the target file of symlink PATH is exists or not.
 `file-exists-p' uses faccessat(), but it fails on some cases (e.g. procfs)."
-  (let* ((path (expand-file-name name))
-	 (default-directory (file-name-directory path))
-	 (target (and path (file-symlink-p path))))
-    (when target
-      (numberp (file-modes target)))))	; deref symlink by stat(2)
+  (let* ((default-directory (file-name-directory path))
+	 (target-name (and path (file-symlink-p path)))
+	 (target-truename (and path (file-truename path))))
+    (when (and target-name
+	       target-truename
+	       (numberp (file-modes target-truename)))
+      (list target-name target-truename))))
 
 (defun dircolors-get-symlink-face (for-target)
   "Return face for symlink or symlink target.
@@ -236,21 +242,22 @@ Otherwise source filename."
   (save-match-data
     ;; Get correct name from dired, not regexp search.
     (let* ((name (dired-get-filename t t))
-	   (exists (dircolors-linkok-p name))
+	   (path (expand-file-name name))
+	   (target-exists (dircolors-linkok-p path))
 	   colors)
       ;; choice color by state of symlink
       (if for-target
-	  (if exists
+	  (if target-exists
 	      (setq colors "target")
 	    (setq colors (or (gethash "mi" dircolors-table)
 			     (gethash "or" dircolors-table))))
-	(if exists
+	(if target-exists
 	    (setq colors (gethash "ln" dircolors-table))
 	  (setq colors (or (gethash "or" dircolors-table)
 			   (gethash "ln" dircolors-table)))))
       ;; "target" is coloring based on target type
       (if (and (stringp colors) (string= "target" colors))
-	  (dircolors-get-target-symlink-face name)
+	  (apply #'dircolors-get-target-symlink-face path target-exists)
 	(ansi-color--find-face colors)))))
 
 (defun dircolors-make-fmt-keyword (fmt code)
