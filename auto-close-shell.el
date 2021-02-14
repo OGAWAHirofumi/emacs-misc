@@ -82,13 +82,13 @@
 
 (defun auto-close-shell-list-select ()
   "Visit shell buffer at current selected line."
-  (interactive)
+  (interactive nil auto-close-shell-list-mode)
   (when-let ((buffer (tabulated-list-get-id)))
     (switch-to-buffer buffer)))
 
 (defun auto-close-shell-list-shell ()
   "Create new shell buffer."
-  (interactive)
+  (interactive nil auto-close-shell-list-mode)
   (ignore-errors
     (delete-window))
   (let ((current-prefix-arg '(4)))
@@ -96,7 +96,7 @@
 
 (defun auto-close-shell-list-quit ()
   "Quit shell list buffer."
-  (interactive)
+  (interactive nil auto-close-shell-list-mode)
   (bury-buffer)
   (ignore-errors
     (delete-window)))
@@ -110,6 +110,7 @@
 
 (define-derived-mode auto-close-shell-list-mode tabulated-list-mode "Shell List"
   "Major mode for shell buffer list."
+  :interactive nil
   (setq tabulated-list-format [("Name" 12 t)
 			       ("PID" 8 t)
 			       ("Info" 40 t)])

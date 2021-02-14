@@ -68,7 +68,8 @@
 				(if default
 				    (format "(default %s)" default)
 				  ""))
-                        nil 'python-pydoc-history default))))
+                        nil 'python-pydoc-history default)))
+   python-mode)
   (when (not (stringp python-pydoc-program))
     (setq python-pydoc-program (python-pydoc-decide-program)))
   (when (string= symbol "")
@@ -80,7 +81,7 @@
 ;;;###autoload
 (defun python-pydoc-at-point ()
   "Run a `pydoc' on the word around point."
-  (interactive)
+  (interactive nil python-mode)
   (python-pydoc (python-eldoc--get-symbol-at-point)))
 
 (provide 'python-pydoc)

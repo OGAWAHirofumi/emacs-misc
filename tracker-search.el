@@ -170,7 +170,7 @@ If N is positive, N times next.  If N is negative N times previous."
 
 (defun tracker-result-prev (arg)
   "Move cursor to a previous search result ARG times."
-  (interactive "p")
+  (interactive "p" tracker-result-mode)
   (or arg (setq arg 1))
   (let* ((pos (and (> (point) (point-min)) (1- (point))))
 	 (range (and pos
@@ -181,7 +181,7 @@ If N is positive, N times next.  If N is negative N times previous."
 
 (defun tracker-result-next (arg)
   "Move cursor to a next search result ARG times."
-  (interactive "p")
+  (interactive "p" tracker-result-mode)
   (or arg (setq arg 1))
   (let ((range (tracker-result-find-prop (point) 'tracker-path arg)))
     (when range
@@ -200,17 +200,17 @@ If N is positive, N times next.  If N is negative N times previous."
 
 (defun tracker-result-dired ()
   "In tracker result, visit the directory that contain the this result."
-  (interactive)
+  (interactive nil tracker-result-mode)
   (dired (file-name-directory (tracker-file-path-at-point (point)))))
 
 (defun tracker-result-find-file ()
   "In tracker result, visit the file or directory named on this result."
-  (interactive)
+  (interactive nil tracker-result-mode)
   (find-file (tracker-file-path-at-point (point))))
 
 (defun tracker-result-find-file-other-window ()
   "In tracker result, visit this file or directory in another window."
-  (interactive)
+  (interactive nil tracker-result-mode)
   (find-file-other-window (tracker-file-path-at-point (point))))
 
 (defun tracker-result-run-shell-command (command &optional arg file-list)
@@ -228,7 +228,8 @@ the list of file names explicitly with the FILE-LIST argument."
       ;; Want to give feedback whether this file or marked files are used:
       (dired-read-shell-command "! on %s: " current-prefix-arg files)
       current-prefix-arg
-      files)))
+      files))
+   tracker-result-mode)
   (dired-run-shell-command
    (dired-shell-stuff-it command file-list nil arg)))
 
