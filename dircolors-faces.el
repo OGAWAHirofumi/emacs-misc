@@ -107,14 +107,23 @@ For example, `dired-symlink-face'."
 			 dircolors-ext-table)
 	      (puthash code-str (nreverse colors) dircolors-table))))))))
 
+(defun dircolors-find-face (colors)
+  "Return color codes COLORS to face."
+  (if (fboundp 'ansi-color--face-vec-face)
+      (let ((face-vec (list (make-bool-vector 8 nil) nil nil)))
+	(ansi-color--update-face-vec face-vec (lambda () (pop colors)))
+	(ansi-color--face-vec-face face-vec))
+    ;; For older ansi-color.el than emacs-28
+    (ansi-color--find-face colors)))
+
 (defun dircolors-get-face (code)
   "Return face match to dircolors CODE key."
   (save-match-data
-    (ansi-color--find-face (gethash code dircolors-table))))
+    (dircolors-find-face (gethash code dircolors-table))))
 (defun dircolors-ext-get-face (ext)
   "Return face match to dircolors EXT key."
   (save-match-data
-    (ansi-color--find-face (gethash ext dircolors-ext-table))))
+    (dircolors-find-face (gethash ext dircolors-ext-table))))
 
 (defun dircolors-run-dircolors ()
   "Get dircolors output for xterm."
@@ -258,7 +267,7 @@ Otherwise source filename."
       ;; "target" is coloring based on target type
       (if (and (stringp colors) (string= "target" colors))
 	  (apply #'dircolors-get-target-symlink-face path target-exists)
-	(ansi-color--find-face colors)))))
+	(dircolors-find-face colors)))))
 
 (defun dircolors-make-fmt-keyword (fmt code)
   "Make `font-lock-keywords' matcher for file type.
