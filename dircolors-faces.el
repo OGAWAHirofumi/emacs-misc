@@ -109,12 +109,13 @@ For example, `dired-symlink-face'."
 
 (defun dircolors-find-face (colors)
   "Return color codes COLORS to face."
-  (if (fboundp 'ansi-color--face-vec-face)
-      (let ((face-vec (list (make-bool-vector 8 nil) nil nil)))
-	(ansi-color--update-face-vec face-vec (lambda () (pop colors)))
-	(ansi-color--face-vec-face face-vec))
-    ;; For older ansi-color.el than emacs-28
-    (ansi-color--find-face colors)))
+  (with-no-warnings
+    (if (fboundp 'ansi-color--face-vec-face)
+	(let ((face-vec (list (make-bool-vector 8 nil) nil nil)))
+	  (ansi-color--update-face-vec face-vec (lambda () (pop colors)))
+	  (ansi-color--face-vec-face face-vec))
+      ;; For older ansi-color.el than emacs-28
+      (ansi-color--find-face colors))))
 
 (defun dircolors-get-face (code)
   "Return face match to dircolors CODE key."
