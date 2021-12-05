@@ -250,7 +250,8 @@ cache of (file-symlink-p path) and (file-truename path)."
 	 (target-truename (and path (file-truename path))))
     (when (and target-name
 	       target-truename
-	       (numberp (file-modes target-truename)))
+	       ;; if target is not accessible, handle as non-exits target
+	       (numberp (ignore-errors (file-modes target-truename))))
       (list target-name target-truename))))
 
 (defun dircolors-get-symlink-face (for-target)
