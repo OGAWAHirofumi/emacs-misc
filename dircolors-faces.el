@@ -81,6 +81,13 @@ For example, `dired-symlink-face'."
 
 (defvar dircolors-table (make-hash-table :test 'equal))
 (defvar dircolors-ext-table (make-hash-table :test 'equal))
+(defvar dircolors-ext-re nil)
+
+(defun dircolors-build-ext-re ()
+  "Build regexp for extensions."
+  (let (extensions)
+    (maphash (lambda (key _value) (push key extensions)) dircolors-ext-table)
+    (concat "\\.\\(" (regexp-opt extensions) "\\)$")))
 
 (defun dircolors-make-tables (ls-colors)
   "Parse LS-COLORS string, then add to maps."
@@ -105,7 +112,8 @@ For example, `dired-symlink-face'."
 	    (if (string-prefix-p "*." code-str)
 		(puthash (substring code-str 2) (nreverse colors)
 			 dircolors-ext-table)
-	      (puthash code-str (nreverse colors) dircolors-table))))))))
+	      (puthash code-str (nreverse colors) dircolors-table))))))
+    (setq dircolors-ext-re (dircolors-build-ext-re))))
 
 (defun dircolors-find-face (colors)
   "Return color codes COLORS to face."
@@ -225,7 +233,7 @@ cache of (file-symlink-p path) and (file-truename path)."
 	 ;; If regular file, try extension base coloring
 	 ((and (string= (nth 0 found) "-")
 	       target-name
-	       (string-match (concat ".+" (dircolors-ext-re)) target-name))
+	       (string-match (concat ".+" dircolors-ext-re) target-name))
 	  (dircolors-ext-get-face (match-string 1 target-name)))
 
 	 (t
@@ -282,12 +290,6 @@ MODES-RE is modes provided by ls, CODE is dircolors code."
   (list (concat dired-re-maybe-mark dired-re-inode-size modes-re)
 	`(".+" (dired-move-to-filename) nil (0 (dircolors-get-face ,code)))))
 
-(defun dircolors-ext-re ()
-  "Regexp for extensions."
-  (let (extensions)
-    (maphash (lambda (key _value) (push key extensions)) dircolors-ext-table)
-    (concat "\\.\\(" (regexp-opt extensions) "\\)$")))
-
 ;; The order of this list is important to get proper fallback if
 ;; LS_COLORS didn't define code.
 (defvar dircolors-font-lock-keywords
@@ -324,7 +326,7 @@ MODES-RE is modes provided by ls, CODE is dircolors code."
 	  ;; It is quicker to first find just an extension, then go
 	  ;; back to the start of that file name.  So we do this
 	  ;; complex MATCH-ANCHORED form.
-	  (list (dircolors-ext-re)
+	  (list dircolors-ext-re
 		'(".+\\.\\(.*\\)" (dired-move-to-filename) nil
 		  (0 (dircolors-ext-get-face (match-string 1))))))
     )
