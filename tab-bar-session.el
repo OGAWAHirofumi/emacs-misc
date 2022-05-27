@@ -42,9 +42,11 @@
 
 (defcustom tbsession-line-style 'smart
   "Mode line style for tab-bar-session.
-If 'smart, hide when only one tab, otherwise use index.
-If 'index, use index of tab-bar.
-If nil, hide always."
+
+Possible values are:
+  `smart' - hide when only one tab, otherwise use index.
+  `index' - use index of tab-bar.
+  nil     - hide always"
   :type '(choice (const :tag "Smart" smart)
 		 (const :tag "Index" index)
 		 (const :tag "Hide" nil)))
