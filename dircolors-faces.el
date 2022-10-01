@@ -329,7 +329,7 @@ MODES-RE is modes provided by ls, CODE is dircolors code."
 	  ;; back to the start of that file name.  So we do this
 	  ;; complex MATCH-ANCHORED form.
 	  (list dircolors-ext-re
-		'(,dircolors-ext-re (dired-move-to-filename) nil
+		'(,(concat ".*" dircolors-ext-re) (dired-move-to-filename) nil
 		  (0 (dircolors-ext-get-face (match-string 1))))))
     )
   )
