@@ -28,7 +28,7 @@
 ;; (require 'dircolors-faces)
 ;; (dircolors-initialize)
 ;; (dircolors-get-face "su")
-;; (dircolors-ext-get-face "jpg")
+;; (dircolors-ext-get-face ".jpg")
 ;;
 ;; and the helper to use for dired,
 ;;
@@ -87,7 +87,7 @@ For example, `dired-symlink-face'."
   "Build regexp for extensions."
   (let (extensions)
     (maphash (lambda (key _value) (push key extensions)) dircolors-ext-table)
-    (concat "\\.\\(" (regexp-opt extensions) "\\)$")))
+    (concat (regexp-opt extensions t) "$")))
 
 (defun dircolors-make-tables (ls-colors)
   "Parse LS-COLORS string, then add to maps."
@@ -100,7 +100,7 @@ For example, `dired-symlink-face'."
 	(if (and (string= code-str "ln") (string= color-str "target"))
 	    ;; ln=target is special case.
 	    (puthash code-str color-str dircolors-table)
-	  ;; convert like: "*.jpg=40;33;01" => ("jpg" (40 33 01))
+	  ;; convert like: "*.jpg=40;33;01" => (".jpg" (40 33 01))
 	  ;; FIXME: LS_COLORS has more complex formats
 	  (let (colors)
 	    (dolist (num (split-string color-str ";" t wsp))
@@ -109,8 +109,8 @@ For example, `dired-symlink-face'."
 		(setq num 0))
 	      (unless (= num 0)		; 0 is error or none color
 		(push num colors)))
-	    (if (string-prefix-p "*." code-str)
-		(puthash (substring code-str 2) (nreverse colors)
+	    (if (string-prefix-p "*" code-str)
+		(puthash (substring code-str 1) (nreverse colors)
 			 dircolors-ext-table)
 	      (puthash code-str (nreverse colors) dircolors-table))))))
     (setq dircolors-ext-re (dircolors-build-ext-re))))
@@ -233,7 +233,7 @@ cache of (file-symlink-p path) and (file-truename path)."
 	 ;; If regular file, try extension base coloring
 	 ((and (string= (nth 0 found) "-")
 	       target-name
-	       (string-match (concat ".+" dircolors-ext-re) target-name))
+	       (string-match dircolors-ext-re target-name))
 	  (dircolors-ext-get-face (match-string 1 target-name)))
 
 	 (t
@@ -320,7 +320,8 @@ MODES-RE is modes provided by ls, CODE is dircolors code."
 	      dircolors-type-code-table)
     ))
 
-(defvar dircolors-ext-font-lock-keywords
+(defun dircolors-ext-get-keywords ()
+  "Build `font-lock-keywords' entry for extensions."
   `(
     ;; Use eval to use latest dircolors tables.
     (eval .
@@ -328,7 +329,7 @@ MODES-RE is modes provided by ls, CODE is dircolors code."
 	  ;; back to the start of that file name.  So we do this
 	  ;; complex MATCH-ANCHORED form.
 	  (list dircolors-ext-re
-		'(".+\\.\\(.*\\)" (dired-move-to-filename) nil
+		'(,dircolors-ext-re (dired-move-to-filename) nil
 		  (0 (dircolors-ext-get-face (match-string 1))))))
     )
   )
@@ -375,8 +376,7 @@ The last argument may not copied, may used as the tail of the new list.
 		      dired-re-dir keywords dircolors-font-lock-keywords)))
     ;; Add keywords at last, to match only if no match else.
     (when (< 0 (hash-table-count dircolors-ext-table))
-      (setq keywords (append
-		      keywords dircolors-ext-font-lock-keywords)))
+      (setq keywords (append keywords (dircolors-ext-get-keywords))))
     keywords))
 
 (provide 'dircolors-faces)
