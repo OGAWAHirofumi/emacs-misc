@@ -119,7 +119,7 @@ inserted to history to be used by `compile'.")
     (mapc (lambda (r)
 	    (when (and r (not (stringp r)))
 	      (user-error "Invalid result of %s: %s" msg r)))
-	  (if (listp result) result (list result)))
+	  (ensure-list result))
     result))
 
 (defun temp-compile-expand (line)
