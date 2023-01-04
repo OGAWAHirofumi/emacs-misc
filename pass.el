@@ -172,7 +172,7 @@ Output of process write to OUTPUT buffer."
 (defun pass-run-cmd-output (&rest args)
   "Call pass command with arguments ARGS, and write output to minibuffer."
   (with-temp-buffer
-    (let ((status (apply #'pass-run-cmd (current-buffer) args)))
+    (let ((status (apply #'pass-run-cmd t args)))
       (message "%s" (string-chop-newline (buffer-string)))
       status)))
 
@@ -280,7 +280,7 @@ Perform an action at time TIMEOUT seconds after."
 (defun pass-entry-get-line (path linenum)
   "Read a line at line number LINENUM from path PATH."
   (with-temp-buffer
-    (let ((status (pass-run-cmd (current-buffer) "show" path)))
+    (let ((status (pass-run-cmd t "show" path)))
       (unless (and (numberp status) (= 0 status))
 	(user-error "Failed %s to read line at %d" path linenum))
       (goto-char (point-min))
@@ -385,7 +385,7 @@ OP is \\='copy or \\='rename."
   (interactive nil pass-mode)
   (let* ((path (cdr (pass-entry-at-point))))
     (with-temp-buffer
-      (let* ((status (pass-run-cmd (current-buffer) "otp" path))
+      (let* ((status (pass-run-cmd t "otp" path))
 	     (data (string-chop-newline (buffer-string))))
 	(unless (and (numberp status) (= 0 status))
 	  (user-error "%s" data))
