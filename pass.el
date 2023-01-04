@@ -394,6 +394,25 @@ OP is \\='copy or \\='rename."
 	  (message "Copied %s OTP to clipboard. Will clear in %d seconds."
 		   path timeout))))))
 
+(defun pass-otp-validate (otpauth)
+  "Validate string OTPAUTH if valid for otpauth URI.
+Return t if valid, otherwise nil."
+  (= 0 (pass-run-cmd nil "otp" "validate" otpauth)))
+
+(defun pass-otp-append-string (path otpauth)
+  "Append string OTPAUTH for otpauth URI to entry PATH."
+  (unless (pass-otp-validate otpauth)
+    (user-error "Invalid otpauth URI: %s" otpauth))
+  (let ((status (pass-pipe-cmd-output otpauth "otp" "append" path)))
+    (when (and (numberp status) (= 0 status))
+      (pass-revert))))
+
+(defun pass-otp-append-uri (otpauth)
+  "Append otpauth URI OTPAUTH to current entry."
+  (interactive "sotpauth URI: " pass-mode)
+  (let ((path (cdr (pass-entry-at-point))))
+    (pass-otp-append-string path otpauth)))
+
 (defun pass-decode-qrcode (file)
   "Decode QR code image file FILE."
   (let ((args `(,@qrcode-program-options ,(expand-file-name file))))
@@ -402,15 +421,13 @@ OP is \\='copy or \\='rename."
       (error
        (user-error "Failed to decode QR code: %s" file)))))
 
-(defun pass-otp-qrcode-append ()
-  "Read QR code for otpauth:// and append to current entry."
+(defun pass-otp-append-qrcode ()
+  "Read QR code for otpauth URI and append to current entry."
   (interactive nil pass-mode)
   (let* ((path (cdr (pass-entry-at-point)))
 	 (img (read-file-name "QR code image file: " nil nil t))
 	 (otpauth (pass-decode-qrcode img)))
-    (let ((status (pass-pipe-cmd-output otpauth "otp" "append" path)))
-      (when (and (numberp status) (= 0 status))
-	(pass-revert)))))
+    (pass-otp-append-string path otpauth)))
 
 (defvar-keymap pass-mode-map
   :doc "Mode map used for `pass-mode'"
@@ -427,7 +444,8 @@ OP is \\='copy or \\='rename."
   "D"   #'pass-remove
   "o"   #'pass-otp-clip
   "O o" #'pass-otp-clip
-  "O a" #'pass-otp-qrcode-append
+  "O a" #'pass-otp-append-uri
+  "O q" #'pass-otp-append-qrcode
   "g"   #'revert-buffer
   "q"   #'kill-current-buffer)
 
