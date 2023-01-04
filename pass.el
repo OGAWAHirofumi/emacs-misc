@@ -55,6 +55,14 @@
   "Default password length when generating."
   :type 'integer)
 
+(defcustom qrcode-program "zbarimg"
+  "The default QR code decoder."
+  :type 'string)
+
+(defcustom qrcode-program-options '("-q" "--raw")
+  "Decode options for `qrcode-program'."
+  :type '(repeat string))
+
 (defvar-local pass-all-entries nil
   "Relative path for all entries.")
 
@@ -167,6 +175,19 @@ Output of process write to OUTPUT buffer."
     (let ((status (apply #'pass-run-cmd (current-buffer) args)))
       (message "%s" (string-chop-newline (buffer-string)))
       status)))
+
+(defun pass-pipe-cmd-output (string &rest args)
+  "Call pass command with arguments ARGS, and write STRING to process input.
+And write process output to minibuffer."
+  (with-temp-buffer
+    (let ((output (current-buffer)))
+      (with-temp-buffer
+	(insert string)
+	(let ((status (apply #'call-process-region (point-min) (point-max)
+			     pass-program nil output nil args)))
+	  (with-current-buffer output
+	    (message "%s" (string-chop-newline (buffer-string))))
+	  status)))))
 
 (defvar pass-read-history nil)
 
@@ -373,6 +394,24 @@ OP is \\='copy or \\='rename."
 	  (message "Copied %s OTP to clipboard. Will clear in %d seconds."
 		   path timeout))))))
 
+(defun pass-decode-qrcode (file)
+  "Decode QR code image file FILE."
+  (let ((args `(,@qrcode-program-options ,(expand-file-name file))))
+    (condition-case nil
+	(car (apply #'process-lines qrcode-program args))
+      (error
+       (user-error "Failed to decode QR code: %s" file)))))
+
+(defun pass-otp-qrcode-append ()
+  "Read QR code for otpauth:// and append to current entry."
+  (interactive nil pass-mode)
+  (let* ((path (cdr (pass-entry-at-point)))
+	 (img (read-file-name "QR code image file: " nil nil t))
+	 (otpauth (pass-decode-qrcode img)))
+    (let ((status (pass-pipe-cmd-output otpauth "otp" "append" path)))
+      (when (and (numberp status) (= 0 status))
+	(pass-revert)))))
+
 (defvar-keymap pass-mode-map
   :doc "Mode map used for `pass-mode'"
   "n"   #'pass-next-entry
@@ -388,6 +427,7 @@ OP is \\='copy or \\='rename."
   "D"   #'pass-remove
   "o"   #'pass-otp-clip
   "O o" #'pass-otp-clip
+  "O a" #'pass-otp-qrcode-append
   "g"   #'revert-buffer
   "q"   #'kill-current-buffer)
 
