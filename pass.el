@@ -319,6 +319,13 @@ PROC is process.  EVENT is process event."
 	  (process-put proc 'buffer buffer)
 	  (set-process-sentinel proc #'pass-edit-sentinel))))))
 
+(defun pass-copy-path ()
+  "Copy path of current entry to `kill-ring'."
+  (interactive nil pass-mode)
+  (let ((path (cdr (pass-entry-at-point))))
+    (kill-new path)
+    (message "%s" path)))
+
 (defun pass-copy-or-rename (op)
   "Copy or Rename current entry.
 OP is \\='copy or \\='rename."
@@ -375,6 +382,7 @@ OP is \\='copy or \\='rename."
   "c"   #'pass-clip
   "o"   #'pass-otp-clip
   "e"   #'pass-edit
+  "w"   #'pass-copy-path
   "C"   #'pass-copy
   "R"   #'pass-rename
   "D"   #'pass-remove
