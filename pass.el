@@ -394,15 +394,8 @@ OP is \\='copy or \\='rename."
 	  (message "Copied %s OTP to clipboard. Will clear in %d seconds."
 		   path timeout))))))
 
-(defun pass-otp-validate (otpauth)
-  "Validate string OTPAUTH if valid for otpauth URI.
-Return t if valid, otherwise nil."
-  (= 0 (pass-run-cmd nil "otp" "validate" otpauth)))
-
 (defun pass-otp-append-string (path otpauth)
   "Append string OTPAUTH for otpauth URI to entry PATH."
-  (unless (pass-otp-validate otpauth)
-    (user-error "Invalid otpauth URI: %s" otpauth))
   (let ((status (pass-pipe-cmd-output otpauth "otp" "append" path)))
     (when (and (numberp status) (= 0 status))
       (pass-revert))))
