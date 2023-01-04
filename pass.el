@@ -279,20 +279,6 @@ Perform an action at time TIMEOUT seconds after."
 		   path timeout)))
     (user-error "Can't read a target line at %d" linenum)))
 
-(defun pass-otp-clip ()
-  "Copy generated OTP code to kill-ring/clipboard in current entry."
-  (interactive nil pass-mode)
-  (let* ((path (cdr (pass-entry-at-point))))
-    (with-temp-buffer
-      (let* ((status (pass-run-cmd (current-buffer) "otp" path))
-	     (data (string-chop-newline (buffer-string))))
-	(unless (and (numberp status) (= 0 status))
-	  (user-error "%s" data))
-	(pass-clip-save data)
-	(let ((timeout (pass-run-clear-timer)))
-	  (message "Copied %s OTP to clipboard. Will clear in %d seconds."
-		   path timeout))))))
-
 (defun pass-edit-sentinel (proc _event)
   "Process sentinel for `pass-edit'.
 PROC is process.  EVENT is process event."
@@ -373,19 +359,35 @@ OP is \\='copy or \\='rename."
 	(when (and (numberp status) (= 0 status))
 	  (pass-revert))))))
 
+(defun pass-otp-clip ()
+  "Copy generated OTP code to kill-ring/clipboard in current entry."
+  (interactive nil pass-mode)
+  (let* ((path (cdr (pass-entry-at-point))))
+    (with-temp-buffer
+      (let* ((status (pass-run-cmd (current-buffer) "otp" path))
+	     (data (string-chop-newline (buffer-string))))
+	(unless (and (numberp status) (= 0 status))
+	  (user-error "%s" data))
+	(pass-clip-save data)
+	(let ((timeout (pass-run-clear-timer)))
+	  (message "Copied %s OTP to clipboard. Will clear in %d seconds."
+		   path timeout))))))
+
 (defvar-keymap pass-mode-map
   :doc "Mode map used for `pass-mode'"
   "n"   #'pass-next-entry
   "p"   #'pass-previous-entry
   "RET" #'pass-view-file
+  "v"   #'pass-view-file
   "+"   #'pass-generate
   "c"   #'pass-clip
-  "o"   #'pass-otp-clip
   "e"   #'pass-edit
   "w"   #'pass-copy-path
   "C"   #'pass-copy
   "R"   #'pass-rename
   "D"   #'pass-remove
+  "o"   #'pass-otp-clip
+  "O o" #'pass-otp-clip
   "g"   #'revert-buffer
   "q"   #'kill-current-buffer)
 
