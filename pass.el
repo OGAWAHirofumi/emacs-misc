@@ -99,7 +99,7 @@ DIR is base directory to NAME."
   (let ((entry (pass-face-entry type name))
 	(path (pass-make-path dir name)))
     (add-to-list 'pass-all-entries path)
-    (propertize entry 'pass-path path)))
+    (propertize entry 'pass-path path 'pass-type type)))
 
 (defun pass-make-symlink-entry (name target-name dir)
   "Make entry from NAME for symlink, and return string.
@@ -151,6 +151,18 @@ DEPTH is the depth of current directory."
   "Move cursor to previous entry."
   (interactive nil pass-mode)
   (when-let ((prop (text-property-search-backward 'pass-path nil nil t)))
+    (goto-char (prop-match-beginning prop))))
+
+(defun pass-next-dirline ()
+  "Move cursor to next directory entry."
+  (interactive nil pass-mode)
+  (when-let ((prop (text-property-search-forward 'pass-type 'dir t t)))
+    (goto-char (prop-match-beginning prop))))
+
+(defun pass-previous-dirline ()
+  "Move cursor to previous directory entry."
+  (interactive nil pass-mode)
+  (when-let ((prop (text-property-search-backward 'pass-type 'dir t t)))
     (goto-char (prop-match-beginning prop))))
 
 (defun pass-path-at-point ()
@@ -425,6 +437,8 @@ OP is \\='copy or \\='rename."
   :doc "Mode map used for `pass-mode'"
   "n"   #'pass-next-entry
   "p"   #'pass-previous-entry
+  ">"   #'pass-next-dirline
+  "<"   #'pass-previous-dirline
   "RET" #'pass-view-file
   "v"   #'pass-view-file
   "+"   #'pass-generate
