@@ -316,9 +316,9 @@ PROC is process.  EVENT is process event."
 (defun pass-edit ()
   "Edit current entry."
   (interactive nil pass-mode)
-  (let ((path (pass-path-at-point))
-	(process-connection-type t)
-	(buffer (get-buffer-create " *Pass Edit*")))
+  (let* ((path (pass-path-at-point))
+	 (buffer (get-buffer-create (format " *PassEdit %s*" path)))
+	 (process-connection-type t))
     (with-current-buffer buffer
       (erase-buffer)
       (with-environment-variables (("EDITOR" "emacsclient"))
