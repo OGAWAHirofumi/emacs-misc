@@ -153,15 +153,13 @@ DEPTH is the depth of current directory."
   (when-let ((prop (text-property-search-backward 'pass-path nil nil t)))
     (goto-char (prop-match-beginning prop))))
 
-(defun pass-entry-at-point ()
-  "Get entry at point."
+(defun pass-path-at-point ()
+  "Get a path of entry at point."
   (let ((prop (save-excursion
 		(beginning-of-line)
 		(text-property-search-forward 'pass-path nil nil t))))
     (if (and prop (<= (prop-match-beginning prop) (line-end-position)))
-	(cons (buffer-substring-no-properties (prop-match-beginning prop)
-					      (prop-match-end prop))
-	      (prop-match-value prop))
+	(prop-match-value prop)
       (user-error "No entry specified"))))
 
 (defun pass-run-cmd (output &rest args)
@@ -211,7 +209,7 @@ If INITIAL-INPUT is non-nil, insert it in the minibuffer initially."
 (defun pass-view-file ()
   "View current entry at point."
   (interactive nil pass-mode)
-  (let* ((path (cdr (pass-entry-at-point)))
+  (let* ((path (pass-path-at-point))
 	 (buffer (get-buffer-create (format "*%s*" path))))
     (with-current-buffer buffer
       (let ((inhibit-read-only t))
@@ -226,7 +224,7 @@ If INITIAL-INPUT is non-nil, insert it in the minibuffer initially."
 (defun pass-generate ()
   "Create and generate password for new entry."
   (interactive nil pass-mode)
-  (let* ((path (cdr (pass-entry-at-point)))
+  (let* ((path (pass-path-at-point))
 	 (initial-input (file-name-directory path))
 	 (target (pass-read-entry "Generate password to: " initial-input))
 	 (len (read-number "Password length: " pass-password-len))
@@ -294,7 +292,7 @@ Perform an action at time TIMEOUT seconds after."
   "Copy line at line number LINENUM to kill-ring/clipboard in current entry."
   (interactive "p" pass-mode)
   (setq linenum (or linenum 1))
-  (if-let* ((path (cdr (pass-entry-at-point)))
+  (if-let* ((path (pass-path-at-point))
 	    (text (pass-entry-get-line path linenum)))
       (progn
 	(pass-clip-save text)
@@ -318,7 +316,7 @@ PROC is process.  EVENT is process event."
 (defun pass-edit ()
   "Edit current entry."
   (interactive nil pass-mode)
-  (let ((path (cdr (pass-entry-at-point)))
+  (let ((path (pass-path-at-point))
 	(process-connection-type t)
 	(buffer (get-buffer-create " *Pass Edit*")))
     (with-current-buffer buffer
@@ -332,16 +330,15 @@ PROC is process.  EVENT is process event."
 (defun pass-copy-path ()
   "Copy path of current entry to `kill-ring'."
   (interactive nil pass-mode)
-  (let ((path (cdr (pass-entry-at-point))))
+  (let ((path (pass-path-at-point)))
     (kill-new path)
     (message "%s" path)))
 
 (defun pass-copy-or-rename (op)
   "Copy or Rename current entry.
 OP is \\='copy or \\='rename."
-  (let* ((entry (pass-entry-at-point))
-	 (name (car entry))
-	 (path (cdr entry))
+  (let* ((path (pass-path-at-point))
+	 (name (file-name-nondirectory path))
 	 (cmd (if (eq op 'copy) "cp" "mv"))
 	 (op-name (if (eq op 'copy) "Copy" "Rename"))
 	 (initial-input (file-name-directory path))
@@ -368,9 +365,8 @@ OP is \\='copy or \\='rename."
 (defun pass-remove ()
   "Remove current entry."
   (interactive nil pass-mode)
-  (let* ((entry (pass-entry-at-point))
-	 (name (car entry))
-	 (path (cdr entry))
+  (let* ((path (pass-path-at-point))
+	 (name (file-name-nondirectory path))
 	 (args (when (funcall pass-deletion-confirmer
 			      (format "Delete %s? " name))
 		 (if (file-directory-p (file-name-concat pass-store-dir path))
@@ -386,7 +382,7 @@ OP is \\='copy or \\='rename."
 (defun pass-otp-clip ()
   "Copy generated OTP code to kill-ring/clipboard in current entry."
   (interactive nil pass-mode)
-  (let* ((path (cdr (pass-entry-at-point))))
+  (let* ((path (pass-path-at-point)))
     (with-temp-buffer
       (let* ((status (pass-run-cmd t "otp" path))
 	     (data (string-chop-newline (buffer-string))))
@@ -406,7 +402,7 @@ OP is \\='copy or \\='rename."
 (defun pass-otp-append-uri (otpauth)
   "Append otpauth URI OTPAUTH to current entry."
   (interactive "sotpauth URI: " pass-mode)
-  (let ((path (cdr (pass-entry-at-point))))
+  (let ((path (pass-path-at-point)))
     (pass-otp-append-string path otpauth)))
 
 (defun pass-decode-qrcode (file)
@@ -420,7 +416,7 @@ OP is \\='copy or \\='rename."
 (defun pass-otp-append-qrcode ()
   "Read QR code for otpauth URI and append to current entry."
   (interactive nil pass-mode)
-  (let* ((path (cdr (pass-entry-at-point)))
+  (let* ((path (pass-path-at-point))
 	 (img (read-file-name "QR code image file: " nil nil t))
 	 (otpauth (pass-decode-qrcode img)))
     (pass-otp-append-string path otpauth)))
