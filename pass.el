@@ -133,10 +133,11 @@ DEPTH is the depth of current directory."
 
 (defun pass-refresh-tree ()
   "Refresh password-store tree on current buffer."
-  (erase-buffer)
-  (insert "Password Store\n")
-  (setq pass-all-entries nil)
-  (pass-traverse-tree pass-store-dir 1)
+  (let ((inhibit-read-only t))
+    (erase-buffer)
+    (insert "Password Store\n")
+    (setq pass-all-entries nil)
+    (pass-traverse-tree pass-store-dir 1))
   (set-buffer-modified-p nil)
   (goto-char (point-min))
   (pass-next-entry))
@@ -210,8 +211,7 @@ If INITIAL-INPUT is non-nil, insert it in the minibuffer initially."
 
 (defun pass-revert (&optional _arg _noconfirm)
   "Reread the Pass buffer."
-  (let ((pos (point))
-	(inhibit-read-only t))
+  (let ((pos (point)))
     (pass-refresh-tree)
     (goto-char pos)
     (beginning-of-line)
@@ -471,8 +471,7 @@ OP is \\='copy or \\='rename."
   (let ((buf (get-buffer-create "*Pass*")))
     (with-current-buffer buf
       (pass-mode)
-      (let ((inhibit-read-only t))
-	(pass-refresh-tree))
+      (pass-refresh-tree)
       (pop-to-buffer-same-window buf))))
 
 (provide 'pass)
