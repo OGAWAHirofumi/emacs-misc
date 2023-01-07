@@ -352,31 +352,34 @@ PROC is process.  EVENT is process event."
     (kill-new path)
     (message "%s" path)))
 
-(defun pass-copy-or-rename (op)
-  "Copy or Rename current entry.
-OP is \\='copy or \\='rename."
-  (let* ((path (pass-path-at-point))
-	 (name (file-name-nondirectory path))
-	 (cmd (if (eq op 'copy) "cp" "mv"))
-	 (op-name (if (eq op 'copy) "Copy" "Rename"))
-	 (initial-input (file-name-directory path))
+(defun pass-copy-or-rename (cmd source target)
+  "Copy or Rename SOURCE entry to TARGET entry.
+CMD is a sub-command for pass (\"cp\" or \"mv\")."
+  (when (string-empty-p target)
+    (user-error "Target is an empty path"))
+  (let ((status (pass-run-cmd-output cmd source target)))
+    (when (and (numberp status) (= 0 status))
+      (pass-revert))))
+
+(defun pass-copy-or-rename-args (op-name)
+  "Return a list of arguments for `pass-copy-or-rename'.
+OP-NAME is a name of operation (\"Copy\" or \"Rename\")."
+  (let* ((source (pass-path-at-point))
+	 (name (file-name-nondirectory source))
+	 (initial-input (file-name-directory source))
 	 (target (pass-read-entry
 		  (format "%s %s to: " op-name name) initial-input)))
-    (when (string-empty-p target)
-      (user-error "%s target is empty path" op-name))
-    (let ((status (pass-run-cmd-output cmd path target)))
-      (when (and (numberp status) (= 0 status))
-	(pass-revert)))))
+    (list source target)))
 
 (defun pass-copy ()
-  "Copy current entry."
+  "Copy a current entry."
   (interactive nil pass-mode)
-  (pass-copy-or-rename 'copy))
+  (apply #'pass-copy-or-rename "cp" (pass-copy-or-rename-args "Copy")))
 
 (defun pass-rename ()
-  "Rename current entry."
+  "Rename a current entry."
   (interactive nil pass-mode)
-  (pass-copy-or-rename 'rename))
+  (apply #'pass-copy-or-rename "mv" (pass-copy-or-rename-args "Rename")))
 
 (defvar pass-deletion-confirmer 'yes-or-no-p) ; or y-or-n-p?
 
