@@ -222,11 +222,10 @@ If INITIAL-INPUT is non-nil, insert it in the minibuffer initially."
     (pass-next-entry)
     (recenter)))
 
-(defun pass-view-file ()
-  "View current entry at point."
-  (interactive nil pass-mode)
-  (let* ((path (pass-path-at-point))
-	 (buffer (get-buffer-create (format "*%s*" path))))
+(defun pass-view-file (path)
+  "View an entry PATH."
+  (interactive (list (pass-path-at-point)) pass-mode)
+  (let ((buffer (get-buffer-create (format "*%s*" path))))
     (with-current-buffer buffer
       (let ((inhibit-read-only t))
 	(erase-buffer)
@@ -237,14 +236,21 @@ If INITIAL-INPUT is non-nil, insert it in the minibuffer initially."
 	  (set-buffer-modified-p nil)))
       (view-buffer-other-window buffer nil 'kill-buffer))))
 
-(defun pass-generate ()
-  "Create and generate password for new entry."
-  (interactive nil pass-mode)
-  (let* ((initial-input (file-name-directory (pass-path-at-point)))
-	 (target (pass-read-entry "Generate password to: " initial-input))
-	 (len (read-number "Password length: " pass-password-len))
-	 (args `(,target ,(number-to-string len))))
-    (unless (y-or-n-p "Password allow symbol chars? ")
+(defun pass-generate (target no-symbol &optional password-len)
+  "Generate new password to TARGET.
+If NO-SYMBOL is non-nil, a generated password doesn't use symbol chars.
+PASSWORD-LEN is the length of new password (25 if nil)."
+  (interactive
+   (let* ((path (pass-path-at-point))
+	  (initial-input (file-name-directory path))
+	  (target (pass-read-entry "Generate password to: " initial-input))
+	  (allow-symbol (y-or-n-p "Password allow symbol chars? "))
+	  (len (read-number "Password length: " pass-password-len)))
+     (list target (not allow-symbol) len))
+   pass-mode)
+  (let* ((password-len (or password-len pass-password-len))
+	 (args `(,target ,(number-to-string password-len))))
+    (when no-symbol
       (push "--no-symbols" args))
     (when (member target pass-all-entries)
       (when (y-or-n-p (format "%s exists.  Update password in place? " target))
@@ -304,12 +310,13 @@ Perform an action at time TIMEOUT seconds after."
       (when (= 0 (forward-line (1- linenum)))
 	(buffer-substring (line-beginning-position) (line-end-position))))))
 
-(defun pass-clip (&optional linenum)
-  "Copy line at line number LINENUM to kill-ring/clipboard in current entry."
-  (interactive "p" pass-mode)
+(defun pass-clip (path &optional linenum)
+  "Copy a line at line number LINENUM in entry PATH to kill-ring/clipboard."
+  (interactive
+   (list (pass-path-at-point) (prefix-numeric-value current-prefix-arg))
+   pass-mode)
   (setq linenum (or linenum 1))
-  (if-let* ((path (pass-path-at-point))
-	    (text (pass-entry-get-line path linenum)))
+  (if-let ((text (pass-entry-get-line path linenum)))
       (progn
 	(pass-clip-save text)
 	(let ((timeout (pass-run-clear-timer)))
@@ -331,12 +338,11 @@ PROC is process.  EVENT is process event."
           (message "%s" (string-chop-newline
 			 (buffer-substring (point) (point-max)))))))))
 
-(defun pass-edit ()
-  "Edit current entry."
-  (interactive nil pass-mode)
-  (let* ((path (pass-path-at-point))
-	 (buffer (get-buffer-create (format " *PassEdit %s*" path)))
-	 (process-connection-type t))
+(defun pass-edit (path)
+  "Edit an entry PATH."
+  (interactive (list (pass-path-at-point)) pass-mode)
+  (let ((buffer (get-buffer-create (format " *PassEdit %s*" path)))
+	(process-connection-type t))
     (with-current-buffer buffer
       (erase-buffer)
       (with-environment-variables (("EDITOR" pass-editor-program))
@@ -345,12 +351,11 @@ PROC is process.  EVENT is process event."
 	  (process-put proc 'buffer buffer)
 	  (set-process-sentinel proc #'pass-edit-sentinel))))))
 
-(defun pass-copy-path ()
-  "Copy path of current entry to `kill-ring'."
-  (interactive nil pass-mode)
-  (let ((path (pass-path-at-point)))
-    (kill-new path)
-    (message "%s" path)))
+(defun pass-copy-path (path)
+  "Copy an entry PATH to `kill-ring'."
+  (interactive (list (pass-path-at-point)) pass-mode)
+  (kill-new path)
+  (message "%s" path))
 
 (defun pass-copy-or-rename (cmd source target)
   "Copy or Rename SOURCE entry to TARGET entry.
@@ -371,23 +376,22 @@ OP-NAME is a name of operation (\"Copy\" or \"Rename\")."
 		  (format "%s %s to: " op-name name) initial-input)))
     (list source target)))
 
-(defun pass-copy ()
-  "Copy a current entry."
-  (interactive nil pass-mode)
-  (apply #'pass-copy-or-rename "cp" (pass-copy-or-rename-args "Copy")))
+(defun pass-copy (source target)
+  "Copy an entry SOURCE to an entry TARGET."
+  (interactive (pass-copy-or-rename-args "Copy") pass-mode)
+  (pass-copy-or-rename "cp" source target))
 
-(defun pass-rename ()
-  "Rename a current entry."
-  (interactive nil pass-mode)
-  (apply #'pass-copy-or-rename "mv" (pass-copy-or-rename-args "Rename")))
+(defun pass-rename (source target)
+  "Rename an entry SOURCE to an entry TARGET."
+  (interactive (pass-copy-or-rename-args "Rename") pass-mode)
+  (pass-copy-or-rename "mv" source target))
 
 (defvar pass-deletion-confirmer 'yes-or-no-p) ; or y-or-n-p?
 
-(defun pass-remove ()
-  "Remove current entry."
-  (interactive nil pass-mode)
-  (let* ((path (pass-path-at-point))
-	 (name (file-name-nondirectory path))
+(defun pass-remove (path)
+  "Remove an entry PATH."
+  (interactive (list (pass-path-at-point)) pass-mode)
+  (let* ((name (file-name-nondirectory path))
 	 (args (when (funcall pass-deletion-confirmer
 			      (format "Delete %s? " name))
 		 (if (file-directory-p (file-name-concat pass-store-dir path))
@@ -400,19 +404,18 @@ OP-NAME is a name of operation (\"Copy\" or \"Rename\")."
 	(when (and (numberp status) (= 0 status))
 	  (pass-revert))))))
 
-(defun pass-otp-clip ()
-  "Copy generated OTP code to kill-ring/clipboard in current entry."
-  (interactive nil pass-mode)
-  (let* ((path (pass-path-at-point)))
-    (with-temp-buffer
-      (let* ((status (pass-run-cmd t "otp" path))
-	     (data (string-chop-newline (buffer-string))))
-	(unless (and (numberp status) (= 0 status))
-	  (user-error "%s" data))
-	(pass-clip-save data)
-	(let ((timeout (pass-run-clear-timer)))
-	  (message "Copied %s OTP to clipboard. Will clear in %d seconds."
-		   path timeout))))))
+(defun pass-otp-clip (path)
+  "Copy a generated OTP code in an entry PATH to kill-ring/clipboard."
+  (interactive (list (pass-path-at-point)) pass-mode)
+  (with-temp-buffer
+    (let ((status (pass-run-cmd t "otp" path))
+	  (data (string-chop-newline (buffer-string))))
+      (unless (and (numberp status) (= 0 status))
+	(user-error "%s" data))
+      (pass-clip-save data)
+      (let ((timeout (pass-run-clear-timer)))
+	(message "Copied %s OTP to clipboard. Will clear in %d seconds."
+		 path timeout)))))
 
 (defun pass-otp-append-string (path otpauth)
   "Append string OTPAUTH for otpauth URI to entry PATH."
@@ -420,11 +423,12 @@ OP-NAME is a name of operation (\"Copy\" or \"Rename\")."
     (when (and (numberp status) (= 0 status))
       (pass-revert))))
 
-(defun pass-otp-append-uri (otpauth)
-  "Append otpauth URI OTPAUTH to current entry."
-  (interactive "sotpauth URI: " pass-mode)
-  (let ((path (pass-path-at-point)))
-    (pass-otp-append-string path otpauth)))
+(defun pass-otp-append-uri (path otpauth)
+  "Append otpauth URI OTPAUTH to an entry PATH."
+  (interactive
+   (list (pass-path-at-point) (read-string "otpauth URI: "))
+   pass-mode)
+  (pass-otp-append-string path otpauth))
 
 (defun pass-decode-qrcode (file)
   "Decode QR code image file FILE."
@@ -434,12 +438,13 @@ OP-NAME is a name of operation (\"Copy\" or \"Rename\")."
       (error
        (user-error "Failed to decode QR code: %s" file)))))
 
-(defun pass-otp-append-qrcode ()
-  "Read QR code for otpauth URI and append to current entry."
-  (interactive nil pass-mode)
-  (let* ((path (pass-path-at-point))
-	 (img (read-file-name "QR code image file: " nil nil t))
-	 (otpauth (pass-decode-qrcode img)))
+(defun pass-otp-append-qrcode (path img)
+  "Decode the QR image file IMG for otpauth URI, then append to an entry PATH."
+  (interactive
+   (list (pass-path-at-point)
+	 (read-file-name "QR code image file: " nil nil t))
+   pass-mode)
+  (let ((otpauth (pass-decode-qrcode img)))
     (pass-otp-append-string path otpauth)))
 
 (defvar-keymap pass-mode-map
