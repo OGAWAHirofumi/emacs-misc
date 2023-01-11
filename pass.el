@@ -300,15 +300,14 @@ Perform an action at time TIMEOUT seconds after."
     (kill-new text))
   (setq pass-clip-last-save `(,text . ,(car kill-ring-yank-pointer))))
 
-(defun pass-entry-get-line (path linenum)
-  "Read a line at line number LINENUM from path PATH."
-  (with-temp-buffer
-    (let ((status (pass-run-cmd t "show" path)))
-      (unless (and (numberp status) (= 0 status))
-	(user-error "Failed %s to read line at %d" path linenum))
-      (goto-char (point-min))
-      (when (= 0 (forward-line (1- linenum)))
-	(buffer-substring (line-beginning-position) (line-end-position))))))
+(defun pass-entry-get-lines (path)
+  "Read lines from path PATH."
+  (process-lines-handling-status
+   pass-program
+   (lambda (status)
+     (unless (and (numberp status) (= 0 status))
+       (user-error "Failed to read %s" path)))
+   "show" path))
 
 (defun pass-clip (path &optional linenum)
   "Copy a line at line number LINENUM in entry PATH to kill-ring/clipboard."
@@ -316,13 +315,49 @@ Perform an action at time TIMEOUT seconds after."
    (list (pass-path-at-point) (prefix-numeric-value current-prefix-arg))
    pass-mode)
   (setq linenum (or linenum 1))
-  (if-let ((text (pass-entry-get-line path linenum)))
+  (if-let ((text (nth (1- linenum) (pass-entry-get-lines path))))
       (progn
 	(pass-clip-save text)
 	(let ((timeout (pass-run-clear-timer)))
 	  (message "Copied %s to clipboard. Will clear in %d seconds."
 		   path timeout)))
     (user-error "Can't read a target line at %d" linenum)))
+
+(defun pass-entry-parse (path)
+  "Parse the field and value in entry PATH."
+  (let (entries)
+    (nreverse
+     (dolist (line (pass-entry-get-lines path) entries)
+       (save-match-data
+	 (when (string-match "\\([^:]+\\):\\(.*\\)" line)
+	   (let ((field (match-string 1 line))
+		 (value (match-string 2 line)))
+	     ;; copy whole line if "otpauth://..."
+	     (when (string= field "otpauth")
+	       (setq value line))
+	     (push (cons (string-trim-right field) (string-trim-left value))
+		   entries))))))))
+
+(defun pass-clip-field (path &optional field)
+  "Copy a value of specified field FIELD in entry PATH to kill-ring/clipboard.
+If FIELD is nil, the \"username\" field is copied.
+
+Interactively, if called with a prefix argument, ask a field name."
+  (interactive (list (pass-path-at-point)) pass-mode)
+  (setq field (or field "username"))
+  (let ((fields-data (pass-entry-parse path)))
+    (unless fields-data
+      (user-error "There are any fields in an entry %s" path))
+    (when current-prefix-arg
+      (setq field (completing-read "Field name: " (mapcar #'car fields-data)
+				   nil t)))
+    (let ((data (assoc field fields-data)))
+      (unless data
+	(user-error "No field %s in an entry %s" field path))
+      (pass-clip-save (cdr data))
+      (let ((timeout (pass-run-clear-timer)))
+	(message "Copied %s to clipboard. Will clear in %d seconds."
+		 path timeout)))))
 
 (defun pass-edit-sentinel (proc _event)
   "Process sentinel for `pass-edit'.
@@ -457,6 +492,7 @@ OP-NAME is a name of operation (\"Copy\" or \"Rename\")."
   "v"   #'pass-view-file
   "+"   #'pass-generate
   "c"   #'pass-clip
+  "u"   #'pass-clip-field
   "e"   #'pass-edit
   "w"   #'pass-copy-path
   "C"   #'pass-copy
