@@ -59,6 +59,10 @@
   "Default password length when generating."
   :type 'integer)
 
+(defcustom pass-default-field "username"
+  "Default field name for copying."
+  :type 'string)
+
 (defcustom qrcode-program "zbarimg"
   "The default QR code decoder."
   :type 'string)
@@ -340,11 +344,11 @@ Perform an action at time TIMEOUT seconds after."
 
 (defun pass-clip-field (path &optional field)
   "Copy a value of specified field FIELD in entry PATH to kill-ring/clipboard.
-If FIELD is nil, the \"username\" field is copied.
+If FIELD is nil, the `pass-default-field' field is copied.
 
 Interactively, if called with a prefix argument, ask a field name."
   (interactive (list (pass-path-at-point)) pass-mode)
-  (setq field (or field "username"))
+  (setq field (or field pass-default-field))
   (let ((fields-data (pass-entry-parse path)))
     (unless fields-data
       (user-error "There are any fields in an entry %s" path))
