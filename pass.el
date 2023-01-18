@@ -291,18 +291,20 @@ PASSWORD-LEN is the length of new password (25 if nil)."
   "Run time to clear saved data.
 Perform an action at time TIMEOUT seconds after."
   (let ((timeout (or timeout pass-clip-timeout)))
-    (setq pass-clip-timer
-	  (run-at-time timeout nil #'pass-clear-last-save))
+    (setq pass-clip-timer (run-at-time timeout nil #'pass-clear-last-save))
     timeout))
 
 (defun pass-clip-save (text)
-  "Save data TEXT to `kill-ring' (and clipboard)."
+  "Save data TEXT to `kill-ring' (and clipboard).
+Return the timeout seconds of clearing a saved data."
   ;; clear old save
   (pass-clear-last-save)
   ;; save text
   (let ((select-enable-clipboard t))
     (kill-new text))
-  (setq pass-clip-last-save `(,text . ,(car kill-ring-yank-pointer))))
+  (setq pass-clip-last-save `(,text . ,(car kill-ring-yank-pointer)))
+  ;; run clearing timer
+  (pass-run-clear-timer))
 
 (defun pass-entry-get-lines (path)
   "Read lines from path PATH."
@@ -320,11 +322,9 @@ Perform an action at time TIMEOUT seconds after."
    pass-mode)
   (setq linenum (or linenum 1))
   (if-let ((text (nth (1- linenum) (pass-entry-get-lines path))))
-      (progn
-	(pass-clip-save text)
-	(let ((timeout (pass-run-clear-timer)))
-	  (message "Copied %s to clipboard. Will clear in %d seconds."
-		   path timeout)))
+      (let ((timeout (pass-clip-save text)))
+	(message "Copied %s to clipboard. Will clear in %d seconds."
+		 path timeout))
     (user-error "Can't read a target line at %d" linenum)))
 
 (defun pass-entry-parse (path)
@@ -358,8 +358,7 @@ Interactively, if called with a prefix argument, ask a field name."
     (let ((data (assoc field fields-data)))
       (unless data
 	(user-error "No field %s in an entry %s" field path))
-      (pass-clip-save (cdr data))
-      (let ((timeout (pass-run-clear-timer)))
+      (let ((timeout (pass-clip-save (cdr data))))
 	(message "Copied %s to clipboard. Will clear in %d seconds."
 		 path timeout)))))
 
@@ -451,8 +450,7 @@ OP-NAME is a name of operation (\"Copy\" or \"Rename\")."
 	  (data (string-chop-newline (buffer-string))))
       (unless (and (numberp status) (= 0 status))
 	(user-error "%s" data))
-      (pass-clip-save data)
-      (let ((timeout (pass-run-clear-timer)))
+      (let ((timeout (pass-clip-save data)))
 	(message "Copied %s OTP to clipboard. Will clear in %d seconds."
 		 path timeout)))))
 
