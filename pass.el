@@ -263,7 +263,9 @@ PASSWORD-LEN is the length of new password (25 if nil)."
       (when (and (numberp status) (= 0 status))
 	(pass-revert)))))
 
+;; (clipboard-content . kill-ring-content)
 (defvar pass-clip-last-save nil)
+;; timer object for a clearing save content
 (defvar pass-clip-timer nil)
 
 (defun pass-clear-last-save ()
