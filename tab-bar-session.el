@@ -119,31 +119,26 @@ With prefix argument \\[universal-argument], prompt for DIRNAME."
 
 ;;; mode-line
 
-(defvar tbsession-mode t)
-
 (defun tbsession-mode-line-indicator ()
   "Return a string representation of the window configurations."
-  (let ((left-delimiter (propertize tbsession-line-left-delimiter
-                                    'face 'tbsession-line-delimiters))
-        (right-delimiter (propertize tbsession-line-right-delimiter
-				     'face 'tbsession-line-delimiters))
-	(line-style (if (and (eq tbsession-line-style 'smart)
-			     (> (length (tab-bar-tabs)) 1))
-			'index
-		      nil))
-        (current-index (tab-bar--current-tab-index)))
-    (if (null line-style)
-	""
-      (concat left-delimiter
-	      (propertize (number-to-string (1+ current-index))
-			  'face 'tbsession-line-active)
-	      right-delimiter))))
+  (let ((hide (and (eq tbsession-line-style 'smart)
+		   (<= (length (tab-bar-tabs)) 1))))
+    (unless hide
+      (let ((left-delimiter (propertize tbsession-line-left-delimiter
+					'face 'tbsession-line-delimiters))
+            (right-delimiter (propertize tbsession-line-right-delimiter
+					 'face 'tbsession-line-delimiters))
+            (current-index (tab-bar--current-tab-index)))
+	(concat left-delimiter
+		(propertize (number-to-string (1+ current-index))
+			    'face 'tbsession-line-active)
+		right-delimiter)))))
 
 (defun tbsession-move-mode-line ()
   "Move mode line indicator to first."
   (let ((elt (assoc 'tbsession-mode mode-line-misc-info)))
     (setq mode-line-misc-info (delete elt mode-line-misc-info))
-    (push '(tbsession-mode (:eval (tbsession-mode-line-indicator)))
+    (push '(tbsession-line-style (:eval (tbsession-mode-line-indicator)))
 	  mode-line-misc-info)))
 
 (provide 'tab-bar-session)
