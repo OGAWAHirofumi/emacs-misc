@@ -136,7 +136,7 @@ With prefix argument \\[universal-argument], prompt for DIRNAME."
 
 (defun tbsession-move-mode-line ()
   "Move mode line indicator to first."
-  (let ((elt (assoc 'tbsession-mode mode-line-misc-info)))
+  (let ((elt (assoc 'tbsession-line-style mode-line-misc-info)))
     (setq mode-line-misc-info (delete elt mode-line-misc-info))
     (push '(tbsession-line-style (:eval (tbsession-mode-line-indicator)))
 	  mode-line-misc-info)))
