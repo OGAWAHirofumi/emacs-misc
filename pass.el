@@ -38,9 +38,10 @@
   "The default pass program."
   :type 'string)
 
-(defcustom pass-editor-program "emacsclient"
+(defcustom pass-editor-command "emacsclient -q"
   "The default editor program to edit."
-  :type 'string)
+  :type '(choice (string :tag "Command")
+                 (const :tag "Use EDITOR" nil)))
 
 (defcustom pass-store-dir (or (bound-and-true-p auth-source-pass-filename)
 			      (getenv "PASSWORD_STORE_DIR")
@@ -372,9 +373,6 @@ PROC is process.  EVENT is process event."
       (when (buffer-live-p buffer)
 	(with-current-buffer buffer
 	  (goto-char (point-min))
-	  (when (string= "emacsclient" (file-name-nondirectory
-					pass-editor-program))
-	    (forward-line 1)) 		; skip output from emacsclient
           (message "%s" (string-chop-newline
 			 (buffer-substring (point) (point-max)))))))))
 
@@ -385,7 +383,9 @@ PROC is process.  EVENT is process event."
 	(process-connection-type t))
     (with-current-buffer buffer
       (erase-buffer)
-      (with-environment-variables (("EDITOR" pass-editor-program))
+      (let ((process-environment (copy-sequence process-environment)))
+	(when pass-editor-command
+          (setenv "EDITOR" pass-editor-command))
 	(let ((proc (start-process "pass-edit" buffer
 				   pass-program "edit" path)))
 	  (process-put proc 'buffer buffer)
