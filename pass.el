@@ -372,9 +372,7 @@ PROC is process.  EVENT is process event."
     (let ((buffer (process-get proc 'buffer)))
       (when (buffer-live-p buffer)
 	(with-current-buffer buffer
-	  (goto-char (point-min))
-          (message "%s" (string-chop-newline
-			 (buffer-substring (point) (point-max)))))))))
+          (message "%s" (string-chop-newline (buffer-string))))))))
 
 (defun pass-edit (path)
   "Edit an entry PATH."
