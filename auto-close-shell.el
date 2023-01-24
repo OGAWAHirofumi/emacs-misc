@@ -37,17 +37,54 @@
 (eval-when-compile
   (require 'subr-x))
 (require 'tabulated-list)
+(require 'shell)
+(require 'term)
 
 (defgroup auto-close-shell nil
   "Auto close shell."
   :prefix "auto-close-shell-"
   :version "25.1"
-  :group 'auto-close-shell)
+  :group 'shell)
 
 (defcustom auto-close-shell-kill-buffer nil
   "If non-nil, kill buffer even if shell exited in background."
-  :type 'boolean
-  :group 'auto-close-shell)
+  :type 'boolean)
+
+(defcustom auto-close-shell-function #'shell
+  "The function to make shell buffer."
+  :type 'function)
+
+(defun auto-close-shell-term (&optional buffer file-name)
+  "Make term buffer for auto-close-shell.
+BUFFER and FILE-NAME are same meaning with `shell' arguments."
+  (interactive
+   (let ((buffer
+	  (and current-prefix-arg
+	       (read-buffer "Term buffer: "
+			    ;; If the current buffer is an inactive
+			    ;; term buffer, use it as the default.
+			    (if (and (eq major-mode 'term-mode)
+				     (null (get-buffer-process
+					    (current-buffer))))
+				(buffer-name)
+			      (generate-new-buffer-name "*terminal*"))))))
+     (list buffer (or explicit-shell-file-name
+		      (getenv "ESHELL")
+		      shell-file-name
+		      "/bin/sh"))))
+  (setq buffer (if (or buffer (not (derived-mode-p 'term-mode))
+                       (term-check-proc (current-buffer)))
+                   (get-buffer-create (or buffer "*terminal*"))
+                 ;; If the current buffer is a dead shell buffer, use it.
+                 (current-buffer)))
+  ;; If no process, or nuked process, crank up a new one and put buffer in
+  ;; term mode.  Otherwise, leave buffer and existing process alone.
+  (when (not (term-check-proc buffer))
+    (with-current-buffer buffer
+      (term-mode) ; Install local vars, mode, keymap, ...
+      (term-exec buffer "terminal" file-name nil nil)
+      (term-char-mode)))
+  (pop-to-buffer-same-window (set-buffer buffer)))
 
 (defvar auto-close-shell-buffers nil)
 (defvar auto-close-shell-list-buffer "*Shell List*")
@@ -175,7 +212,7 @@ PROCESS and EVENT are to used to call original sentinel."
   (interactive)
   (if (and (null current-prefix-arg) (> (length auto-close-shell-buffers) 1))
       (auto-close-shell-list)
-    (let* ((buffer (call-interactively #'shell args))
+    (let* ((buffer (call-interactively auto-close-shell-function args))
 	   (process (get-buffer-process buffer))
 	   (sentinel (and process (process-sentinel process))))
       (when (and process (not (eq sentinel 'auto-close-shell-sentinel)))
