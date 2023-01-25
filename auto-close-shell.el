@@ -206,10 +206,8 @@ PROCESS and EVENT are to used to call original sentinel."
 	;; kill buffer was not in window (killed in background)
 	(and auto-close-shell-kill-buffer (kill-buffer buffer))))))
 
-;;;###autoload
-(defun auto-close-shell (&rest args)
-  "Setup shell with ARGS arguments, then add sentinel chain to shell process."
-  (interactive)
+(defun auto-close-func (&rest args)
+  "Setup shell/term with ARGS arguments, then add sentinel chain to a process."
   (if (and (null current-prefix-arg) (> (length auto-close-shell-buffers) 1))
       (auto-close-shell-list)
     (let* ((buffer (call-interactively auto-close-shell-function args))
@@ -220,6 +218,20 @@ PROCESS and EVENT are to used to call original sentinel."
 	(set-process-sentinel process #'auto-close-shell-sentinel))
       (auto-close-shell--remember buffer)
       buffer)))
+
+;;;###autoload
+(defun auto-close-shell (&rest args)
+  "Setup shell with ARGS arguments, then add sentinel chain to shell process."
+  (interactive)
+  (let ((auto-close-shell-function #'shell))
+    (apply #'auto-close-func args)))
+
+;;;###autoload
+(defun auto-close-term (&rest args)
+  "Setup term with ARGS arguments, then add sentinel chain to shell process."
+  (interactive)
+  (let ((auto-close-shell-function #'auto-close-shell-term))
+    (apply #'auto-close-func args)))
 
 (provide 'auto-close-shell)
 ;;; auto-close-shell.el ends here
