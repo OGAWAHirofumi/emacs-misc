@@ -26,9 +26,9 @@
 ;; For example,
 ;;
 ;; (with-eval-after-load 'doc-view
-;;  (require 'doc-view-poppler)
-;;  (setq doc-view-pdf->png-converter-function
-;;	#'doc-view-pdf->png-converter-poppler))
+;;   (require 'doc-view-poppler)
+;;   (setq doc-view-pdf->png-converter-function
+;;         #'doc-view-pdf->png-converter-poppler))
 
 ;;; Code:
 
@@ -41,8 +41,8 @@
 If PAGE is non-nil, convert only specified page.  CALLBACK is
 callback for caller."
   (let* ((path (expand-file-name png))
-	 (dir (file-name-directory path))
-	 (name "poppler-page"))
+         (dir (file-name-directory path))
+         (name "poppler-page"))
     (doc-view-start-process
      "pdf->png" doc-view-poppler-program
      `("-png"
@@ -53,14 +53,14 @@ callback for caller."
      (lambda ()
        ;; rename temporary name to target name
        (let ((re (if page
-		     (format "%s-0*%d\\.png" name page)
-		   (concat name "-[0-9]+\\.png")))
-	     (case-fold-search nil))
-	 (save-match-data
-	   (dolist (file (directory-files dir t re))
-	     (when (string-match (concat name "-0*\\([0-9]+\\)\\.png") file)
-	       (let ((page-nr (string-to-number (match-string 1 file))))
-		 (rename-file file (format png page-nr) t))))))
+                     (format "%s-0*%d\\.png" name page)
+                   (concat name "-[0-9]+\\.png")))
+             (case-fold-search nil))
+         (save-match-data
+           (dolist (file (directory-files dir t re))
+             (when (string-match (concat name "-0*\\([0-9]+\\)\\.png") file)
+               (let ((page-nr (string-to-number (match-string 1 file))))
+                 (rename-file file (format png page-nr) t))))))
        (funcall callback)))))
 
 (provide 'doc-view-poppler)

@@ -48,8 +48,8 @@ Possible values are:
   `index' - use index of tab-bar.
   nil     - hide always"
   :type '(choice (const :tag "Smart" smart)
-		 (const :tag "Index" index)
-		 (const :tag "Hide" nil)))
+                 (const :tag "Index" index)
+                 (const :tag "Hide" nil)))
 
 (defface tbsession-line-delimiters
   '((t (nil)))
@@ -74,14 +74,14 @@ Possible values are:
 (defun tbsession-filter-alist ()
   "Return `frameset-filter-alist' only for tabs."
   (let ((frameset-filter-alist (copy-tree frameset-filter-alist))
-	(save-alist '(tabs)))
+        (save-alist '(tabs)))
     (mapc
      (lambda (element)
        (let* ((param (car element))
-	      (action (if (memq param save-alist)
-			  (cdr (assq param frameset-filter-alist))
-			:never)))
-	 (push (cons param action) frameset-filter-alist)))
+              (action (if (memq param save-alist)
+                          (cdr (assq param frameset-filter-alist))
+                        :never)))
+         (push (cons param action) frameset-filter-alist)))
      (frame-parameters))
     frameset-filter-alist))
 
@@ -89,57 +89,57 @@ Possible values are:
   "Save tab-bar session to `tbsession-default-dirname'.
 With prefix argument \\[universal-argument], prompt for DIRNAME."
   (interactive (list
-		(let ((default tbsession-default-dirname))
-		  (if current-prefix-arg
+                (let ((default tbsession-default-dirname))
+                  (if current-prefix-arg
                       (read-directory-name "Directory to save Session file in: "
-					   default default t)
-		    default))))
+                                           default default t)
+                    default))))
   (let ((desktop-base-file-name tbsession-default-file-name)
-	;; Minimize variables to save desktop file
-	(frameset-filter-alist (tbsession-filter-alist))
-	(desktop-globals-to-save '())
-	(desktop-locals-to-save '()))
+        ;; Minimize variables to save desktop file
+        (frameset-filter-alist (tbsession-filter-alist))
+        (desktop-globals-to-save '())
+        (desktop-locals-to-save '()))
     (desktop-save dirname)
     (message "Saved config to \"%s\""
-	     (expand-file-name desktop-base-file-name dirname))))
+             (expand-file-name desktop-base-file-name dirname))))
 
 (defun tbsession-load (&optional dirname)
   "Load tab-bar session from `tbsession-default-dirname'.
 With prefix argument \\[universal-argument], prompt for DIRNAME."
   (interactive (list
-		(let ((default tbsession-default-dirname))
-		  (if current-prefix-arg
+                (let ((default tbsession-default-dirname))
+                  (if current-prefix-arg
                       (read-directory-name "Directory to load Session file in: "
-					   default default t)
-		    default))))
+                                           default default t)
+                    default))))
   (let ((desktop-base-file-name tbsession-default-file-name))
     (desktop-read dirname)
     (message "Loaded config from \"%s\""
-	     (expand-file-name desktop-base-file-name dirname))))
+             (expand-file-name desktop-base-file-name dirname))))
 
 ;;; mode-line
 
 (defun tbsession-mode-line-indicator ()
   "Return a string representation of the window configurations."
   (let ((hide (and (eq tbsession-line-style 'smart)
-		   (<= (length (tab-bar-tabs)) 1))))
+                   (<= (length (tab-bar-tabs)) 1))))
     (unless hide
       (let ((left-delimiter (propertize tbsession-line-left-delimiter
-					'face 'tbsession-line-delimiters))
+                                        'face 'tbsession-line-delimiters))
             (right-delimiter (propertize tbsession-line-right-delimiter
-					 'face 'tbsession-line-delimiters))
+                                         'face 'tbsession-line-delimiters))
             (current-index (tab-bar--current-tab-index)))
-	(concat left-delimiter
-		(propertize (number-to-string (1+ current-index))
-			    'face 'tbsession-line-active)
-		right-delimiter)))))
+        (concat left-delimiter
+                (propertize (number-to-string (1+ current-index))
+                            'face 'tbsession-line-active)
+                right-delimiter)))))
 
 (defun tbsession-move-mode-line ()
   "Move mode line indicator to first."
   (let ((elt (assoc 'tbsession-line-style mode-line-misc-info)))
     (setq mode-line-misc-info (delete elt mode-line-misc-info))
     (push '(tbsession-line-style (:eval (tbsession-mode-line-indicator)))
-	  mode-line-misc-info)))
+          mode-line-misc-info)))
 
 (provide 'tab-bar-session)
 ;;; tab-bar-session.el ends here

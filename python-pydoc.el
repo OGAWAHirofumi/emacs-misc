@@ -23,9 +23,9 @@
 ;; For example,
 ;;
 ;; (add-hook 'python-mode-hook
-;;	  (lambda ()
-;;	    (autoload 'python-pydoc "python-pydoc" nil t)
-;;	    (define-key python-mode-map "\C-ho" 'python-pydoc)))
+;;           (lambda ()
+;;             (autoload 'python-pydoc "python-pydoc" nil t)
+;;             (define-key python-mode-map "\C-ho" 'python-pydoc)))
 
 ;;; Code:
 
@@ -41,7 +41,7 @@
 (defcustom python-pydoc-program 'guess
   "Program used by `python-pydoc' to produce help."
   :type '(choice (const guess :tag "Guess from shebang")
-		 (string :tag "pydoc command"))
+                 (string :tag "pydoc command"))
   :group 'python-pydoc)
 
 (defvar python-pydoc-history nil
@@ -52,11 +52,11 @@
 (defun python-pydoc-decide-program ()
   "Return pydoc command name from shebang."
   (let ((shebang (save-excursion
-		   (goto-char (point-min))
-		   (when (looking-at auto-mode-interpreter-regexp)
-		     (match-string 2)))))
+                   (goto-char (point-min))
+                   (when (looking-at auto-mode-interpreter-regexp)
+                     (match-string 2)))))
     (if (and shebang (string-match "python\\([0-9]+\\)?" shebang))
-	(concat "pydoc" (match-string 1 shebang))
+        (concat "pydoc" (match-string 1 shebang))
       "pydoc3")))
 
 ;;;###autoload
@@ -65,9 +65,9 @@
   (interactive
    (let ((default (python-eldoc--get-symbol-at-point)))
      (list (read-string (format "Describe symbol%s: "
-				(if default
-				    (format "(default %s)" default)
-				  ""))
+                                (if default
+                                    (format "(default %s)" default)
+                                  ""))
                         nil 'python-pydoc-history default)))
    python-mode)
   (when (not (stringp python-pydoc-program))
@@ -75,7 +75,7 @@
   (when (string= symbol "")
     (user-error "No pydoc args given"))
   (let ((Man-switches "")
-	(manual-program python-pydoc-program))
+        (manual-program python-pydoc-program))
     (Man-getpage-in-background symbol)))
 
 ;;;###autoload

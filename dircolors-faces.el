@@ -33,10 +33,10 @@
 ;; and the helper to use for dired,
 ;;
 ;; (add-hook 'dired-load-hook
-;;	  (lambda ()
-;;	    (require 'dircolors-faces)
-;;	    (setq dired-font-lock-keywords (dircolors-make-font-lock-keywords))
-;;	    ))
+;;           (lambda ()
+;;             (require 'dircolors-faces)
+;;             (setq dired-font-lock-keywords (dircolors-make-font-lock-keywords))
+;;             ))
 ;;
 ;; The dircolors types
 ;;
@@ -92,36 +92,36 @@ For example, `dired-symlink-face'."
 (defun dircolors-make-tables (ls-colors)
   "Parse LS-COLORS string, then add to maps."
   (let ((wsp split-string-default-separators)
-	code-str color-str)
+        code-str color-str)
     (dolist (str (split-string ls-colors ":" t wsp))
       (when (string-match "\\([^=]+\\)=\\(.*\\)" str)
-	(setq code-str (match-string 1 str))
-	(setq color-str (match-string 2 str))
-	(if (and (string= code-str "ln") (string= color-str "target"))
-	    ;; ln=target is special case.
-	    (puthash code-str color-str dircolors-table)
-	  ;; convert like: "*.jpg=40;33;01" => (".jpg" (40 33 01))
-	  ;; FIXME: LS_COLORS has more complex formats
-	  (let (colors)
-	    (dolist (num (split-string color-str ";" t wsp))
-	      (setq num (string-to-number num 10))
-	      (when (and (not dircolors-use-bold) (= 1 num))
-		(setq num 0))
-	      (unless (= num 0)		; 0 is error or none color
-		(push num colors)))
-	    (if (string-prefix-p "*" code-str)
-		(puthash (substring code-str 1) (nreverse colors)
-			 dircolors-ext-table)
-	      (puthash code-str (nreverse colors) dircolors-table))))))
+        (setq code-str (match-string 1 str))
+        (setq color-str (match-string 2 str))
+        (if (and (string= code-str "ln") (string= color-str "target"))
+            ;; ln=target is special case.
+            (puthash code-str color-str dircolors-table)
+          ;; convert like: "*.jpg=40;33;01" => (".jpg" (40 33 01))
+          ;; FIXME: LS_COLORS has more complex formats
+          (let (colors)
+            (dolist (num (split-string color-str ";" t wsp))
+              (setq num (string-to-number num 10))
+              (when (and (not dircolors-use-bold) (= 1 num))
+                (setq num 0))
+              (unless (= num 0)                 ; 0 is error or none color
+                (push num colors)))
+            (if (string-prefix-p "*" code-str)
+                (puthash (substring code-str 1) (nreverse colors)
+                         dircolors-ext-table)
+              (puthash code-str (nreverse colors) dircolors-table))))))
     (setq dircolors-ext-re (dircolors-build-ext-re))))
 
 (defun dircolors-find-face (colors)
   "Return color codes COLORS to face."
   (with-no-warnings
     (if (fboundp 'ansi-color--face-vec-face)
-	(let ((face-vec (list (make-bool-vector 8 nil) nil nil)))
-	  (ansi-color--update-face-vec face-vec (lambda () (pop colors)))
-	  (ansi-color--face-vec-face face-vec))
+        (let ((face-vec (list (make-bool-vector 8 nil) nil nil)))
+          (ansi-color--update-face-vec face-vec (lambda () (pop colors)))
+          (ansi-color--face-vec-face face-vec))
       ;; For older ansi-color.el than emacs-28
       (ansi-color--find-face colors))))
 
@@ -144,8 +144,8 @@ For example, `dired-symlink-face'."
   (clrhash dircolors-table)
   (clrhash dircolors-ext-table)
   (let ((ls-colors (or (getenv "LS_COLORS")
-		       (and dircolors-use-dircolors
-			    (dircolors-run-dircolors)))))
+                       (and dircolors-use-dircolors
+                            (dircolors-run-dircolors)))))
     (and ls-colors (dircolors-make-tables ls-colors))))
 
 ;;
@@ -168,7 +168,7 @@ For example, `dired-symlink-face'."
     ))
 
 (defconst dircolors-type-code-table '(("-" "fi") ("d" "di") ("p" "pi")
-				      ("s" "so") ("b" "bd") ("c" "cd")))
+                                      ("s" "so") ("b" "bd") ("c" "cd")))
 
 ;; make (match-string 1, 2, and 3) to match symlink source/target
 (defun dircolors-match-symlink (limit)
@@ -176,11 +176,11 @@ For example, `dired-symlink-face'."
 1 is source filename, 2 is arrow, 3 is target filename in (match-string).
 Argument LIMIT limits search."
   (let* ((start (dired-move-to-filename))
-	 (end (dired-move-to-end-of-filename t))
-	 source arrow target)
+         (end (dired-move-to-end-of-filename t))
+         source arrow target)
     (if (or (not start) (not end) (>= start end))
-	;; no match
-	nil
+        ;; no match
+        nil
       ;; match symlink source
       (goto-char start)
       (re-search-forward ".+" end t)
@@ -197,61 +197,61 @@ Argument LIMIT limits search."
 
 
 (defun dircolors-get-target-symlink-face (path &optional target-name
-					       target-truename)
+                                               target-truename)
   "Return face for PATH based on type of dereferenced symlink.
 If TARGET-NAME and TARGET-TRUENAME are non-nil, it should be the
 cache of (file-symlink-p path) and (file-truename path)."
   (let* ((target-name (or target-name (file-symlink-p path)))
-	 (target-truename (or target-truename (file-truename path)))
-	 ;; file-attributes is nofollow, so using file-truename
-	 (attrs (file-attributes target-truename))
-	 (modes (file-attribute-modes attrs))
-	 found)
+         (target-truename (or target-truename (file-truename path)))
+         ;; file-attributes is nofollow, so using file-truename
+         (attrs (file-attributes target-truename))
+         (modes (file-attribute-modes attrs))
+         found)
     (save-match-data
       (cond
        ;; file was changed before `file-attributes'
        ((or (null modes) (string-prefix-p "l" modes))
-	dired-symlink-face)
+        dired-symlink-face)
 
        ;; Special modes are handled here
        ((setq found (seq-find (lambda (x)
-				(string-match (nth 0 x) modes))
-			      dircolors-modes-code-table))
-	(dircolors-get-face (nth 1 found)))
+                                (string-match (nth 0 x) modes))
+                              dircolors-modes-code-table))
+        (dircolors-get-face (nth 1 found)))
 
        ;; EXEC type
        ((string-match dired-re-exe (concat "  " modes))
-	(dircolors-get-face "ex"))
+        (dircolors-get-face "ex"))
        ;; MULTIHARDLINK is unsupported
 
        ;; If not colored, based on file type (DIR/FIFO/SOCK/BLOCK/CHR)
        ;; DOOR is unsupported
        ((setq found (seq-find (lambda (x)
-				(string-prefix-p (nth 0 x) modes))
-			      dircolors-type-code-table))
-	(cond
-	 ;; If regular file, try extension base coloring
-	 ((and (string= (nth 0 found) "-")
-	       target-name
-	       (string-match dircolors-ext-re target-name))
-	  (dircolors-ext-get-face (match-string 1 target-name)))
+                                (string-prefix-p (nth 0 x) modes))
+                              dircolors-type-code-table))
+        (cond
+         ;; If regular file, try extension base coloring
+         ((and (string= (nth 0 found) "-")
+               target-name
+               (string-match dircolors-ext-re target-name))
+          (dircolors-ext-get-face (match-string 1 target-name)))
 
-	 (t
-	  (dircolors-get-face (nth 1 found)))))
+         (t
+          (dircolors-get-face (nth 1 found)))))
 
        (t
-	dired-symlink-face)))))
+        dired-symlink-face)))))
 
 (defun dircolors-linkok-p (path)
   "Check if the target file of symlink PATH is exists or not.
 `file-exists-p' uses faccessat(), but it fails on some cases (e.g. procfs)."
   (let* ((default-directory (file-name-directory path))
-	 (target-name (and path (file-symlink-p path)))
-	 (target-truename (and path (file-truename path))))
+         (target-name (and path (file-symlink-p path)))
+         (target-truename (and path (file-truename path))))
     (when (and target-name
-	       target-truename
-	       ;; if target is not accessible, handle as non-exits target
-	       (numberp (ignore-errors (file-modes target-truename))))
+               target-truename
+               ;; if target is not accessible, handle as non-exits target
+               (numberp (ignore-errors (file-modes target-truename))))
       (list target-name target-truename))))
 
 (defun dircolors-get-symlink-face (for-target)
@@ -261,35 +261,35 @@ Otherwise source filename."
   (save-match-data
     ;; Get correct name from dired, not regexp search.
     (let* ((name (dired-get-filename t t))
-	   (path (expand-file-name name))
-	   (target-exists (dircolors-linkok-p path))
-	   colors)
+           (path (expand-file-name name))
+           (target-exists (dircolors-linkok-p path))
+           colors)
       ;; choice color by state of symlink
       (if for-target
-	  (if target-exists
-	      (setq colors "target")
-	    (setq colors (or (gethash "mi" dircolors-table)
-			     (gethash "or" dircolors-table))))
-	(if target-exists
-	    (setq colors (gethash "ln" dircolors-table))
-	  (setq colors (or (gethash "or" dircolors-table)
-			   (gethash "ln" dircolors-table)))))
+          (if target-exists
+              (setq colors "target")
+            (setq colors (or (gethash "mi" dircolors-table)
+                             (gethash "or" dircolors-table))))
+        (if target-exists
+            (setq colors (gethash "ln" dircolors-table))
+          (setq colors (or (gethash "or" dircolors-table)
+                           (gethash "ln" dircolors-table)))))
       ;; "target" is coloring based on target type
       (if (and (stringp colors) (string= "target" colors))
-	  (apply #'dircolors-get-target-symlink-face path target-exists)
-	(dircolors-find-face colors)))))
+          (apply #'dircolors-get-target-symlink-face path target-exists)
+        (dircolors-find-face colors)))))
 
 (defun dircolors-make-fmt-keyword (fmt code)
   "Make `font-lock-keywords' matcher for file type.
 FMT is file type provided by ls, CODE is dircolors code."
   (list (concat dired-re-maybe-mark dired-re-inode-size fmt "[^:]")
-	`(".+" (dired-move-to-filename) nil (0 (dircolors-get-face ,code)))))
+        `(".+" (dired-move-to-filename) nil (0 (dircolors-get-face ,code)))))
 
 (defun dircolors-make-modes-keyword (modes-re &optional code)
   "Make `font-lock-keywords' matcher for modes.
 MODES-RE is modes provided by ls, CODE is dircolors code."
   (list (concat dired-re-maybe-mark dired-re-inode-size modes-re)
-	`(".+" (dired-move-to-filename) nil (0 (dircolors-get-face ,code)))))
+        `(".+" (dired-move-to-filename) nil (0 (dircolors-get-face ,code)))))
 
 ;; The order of this list is important to get proper fallback if
 ;; LS_COLORS didn't define code.
@@ -298,26 +298,26 @@ MODES-RE is modes provided by ls, CODE is dircolors code."
     ;; LINK/ORPHAN/MISSING type
     (,dired-re-sym
      (dircolors-match-symlink nil nil
-			      (1 (dircolors-get-symlink-face nil))
-			      (2 dircolors-symlink-arrow-face)
-			      (3 (dircolors-get-symlink-face t))))
+                              (1 (dircolors-get-symlink-face nil))
+                              (2 dircolors-symlink-arrow-face)
+                              (3 (dircolors-get-symlink-face t))))
 
     ;; DIR are handled by dired basically
     ;; special modes are handled here
     ,@(mapcar (lambda (x)
-		(dircolors-make-modes-keyword (car x) (cadr x)))
-	      dircolors-modes-code-table)
+                (dircolors-make-modes-keyword (car x) (cadr x)))
+              dircolors-modes-code-table)
 
     ;; EXEC type
     (,dired-re-exe (".+" (dired-move-to-filename) nil
-		    (0 (dircolors-get-face "ex"))))
+                    (0 (dircolors-get-face "ex"))))
     ;; MULTIHARDLINK is unsupported
 
     ;; If not colored, based on file type (DIR/FIFO/SOCK/BLOCK/CHR)
     ;; DOOR is unsupported
     ,@(mapcar (lambda (x)
-		(dircolors-make-fmt-keyword (car x) (cadr x)))
-	      dircolors-type-code-table)
+                (dircolors-make-fmt-keyword (car x) (cadr x)))
+              dircolors-type-code-table)
     ))
 
 (defun dircolors-ext-get-keywords ()
@@ -325,12 +325,12 @@ MODES-RE is modes provided by ls, CODE is dircolors code."
   `(
     ;; Use eval to use latest dircolors tables.
     (eval .
-	  ;; It is quicker to first find just an extension, then go
-	  ;; back to the start of that file name.  So we do this
-	  ;; complex MATCH-ANCHORED form.
-	  (list dircolors-ext-re
-		'(,(concat ".*" dircolors-ext-re) (dired-move-to-filename) nil
-		  (0 (dircolors-ext-get-face (match-string 1))))))
+          ;; It is quicker to first find just an extension, then go
+          ;; back to the start of that file name.  So we do this
+          ;; complex MATCH-ANCHORED form.
+          (list dircolors-ext-re
+                '(,(concat ".*" dircolors-ext-re) (dired-move-to-filename) nil
+                  (0 (dircolors-ext-get-face (match-string 1))))))
     )
   )
 
@@ -349,15 +349,15 @@ The last argument may not copied, may used as the tail of the new list.
     (when (assoc key alist)
       ;; Found key somewhere, find the position to insert
       (let* ((new-alist (copy-sequence alist))
-	     (pos new-alist))
-	(catch 'found
-	  (while pos
-	    (when (equal key (caar (cdr pos)))
-	      (throw 'found t))
-	    (setq pos (cdr pos))))
-	(let ((after (cdr pos)))
-	  (setcdr pos nil)
-	  (append new-alist (apply 'append sequences) after))))))
+             (pos new-alist))
+        (catch 'found
+          (while pos
+            (when (equal key (caar (cdr pos)))
+              (throw 'found t))
+            (setq pos (cdr pos))))
+        (let ((after (cdr pos)))
+          (setcdr pos nil)
+          (append new-alist (apply 'append sequences) after))))))
 
 (defvar dircolors-dired-font-lock-keywords dired-font-lock-keywords
   "Original `dired-font-lock-keywords'.")
@@ -373,7 +373,7 @@ The last argument may not copied, may used as the tail of the new list.
     ;; Insert keywords between "directory" and "mark" matchers.
     (when (< 0 (hash-table-count dircolors-table))
       (setq keywords (dircolors-insert-before
-		      dired-re-dir keywords dircolors-font-lock-keywords)))
+                      dired-re-dir keywords dircolors-font-lock-keywords)))
     ;; Add keywords at last, to match only if no match else.
     (when (< 0 (hash-table-count dircolors-ext-table))
       (setq keywords (append keywords (dircolors-ext-get-keywords))))

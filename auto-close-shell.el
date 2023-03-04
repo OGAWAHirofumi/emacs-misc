@@ -59,19 +59,19 @@
 BUFFER and FILE-NAME are same meaning with `shell' arguments."
   (interactive
    (let ((buffer
-	  (and current-prefix-arg
-	       (read-buffer "Term buffer: "
-			    ;; If the current buffer is an inactive
-			    ;; term buffer, use it as the default.
-			    (if (and (eq major-mode 'term-mode)
-				     (null (get-buffer-process
-					    (current-buffer))))
-				(buffer-name)
-			      (generate-new-buffer-name "*terminal*"))))))
+          (and current-prefix-arg
+               (read-buffer "Term buffer: "
+                            ;; If the current buffer is an inactive
+                            ;; term buffer, use it as the default.
+                            (if (and (eq major-mode 'term-mode)
+                                     (null (get-buffer-process
+                                            (current-buffer))))
+                                (buffer-name)
+                              (generate-new-buffer-name "*terminal*"))))))
      (list buffer (or explicit-shell-file-name
-		      (getenv "ESHELL")
-		      shell-file-name
-		      "/bin/sh"))))
+                      (getenv "ESHELL")
+                      shell-file-name
+                      "/bin/sh"))))
   (setq buffer (if (or buffer (not (derived-mode-p 'term-mode))
                        (term-check-proc (current-buffer)))
                    (get-buffer-create (or buffer "*terminal*"))
@@ -94,20 +94,20 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
   (setq tabulated-list-entries nil)
   (dolist (buffer auto-close-shell-buffers)
     (let* ((bufname (buffer-name buffer))
-	   (p (get-buffer-process buffer))
-	   (pid  (if (process-id p) (format "%d" (process-id p)) "--"))
-	   (name (process-name p))
-	   (dir (with-current-buffer buffer
-		  (cond
-		   ((buffer-file-name))
-		   ((bound-and-true-p list-buffers-directory))
-		   ((let ((dirname (and (boundp 'dired-directory)
-					(if (stringp dired-directory)
-					    dired-directory
-					  (car dired-directory)))))
-		      (and dirname (expand-file-name dirname)))))))
-	   (status (symbol-name (process-status p)))
-	   (info (format "(%s %s) %s" name status (abbreviate-file-name dir))))
+           (p (get-buffer-process buffer))
+           (pid  (if (process-id p) (format "%d" (process-id p)) "--"))
+           (name (process-name p))
+           (dir (with-current-buffer buffer
+                  (cond
+                   ((buffer-file-name))
+                   ((bound-and-true-p list-buffers-directory))
+                   ((let ((dirname (and (boundp 'dired-directory)
+                                        (if (stringp dired-directory)
+                                            dired-directory
+                                          (car dired-directory)))))
+                      (and dirname (expand-file-name dirname)))))))
+           (status (symbol-name (process-status p)))
+           (info (format "(%s %s) %s" name status (abbreviate-file-name dir))))
       (push (list buffer (vector bufname pid info)) tabulated-list-entries)))
   (tabulated-list-init-header))
 
@@ -140,17 +140,17 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
 
 (defvar auto-close-shell-list-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map "\C-m"	'auto-close-shell-list-select)
-    (define-key map "s"		'auto-close-shell-list-shell)
-    (define-key map "q"		'auto-close-shell-list-quit)
+    (define-key map "\C-m"      'auto-close-shell-list-select)
+    (define-key map "s"                 'auto-close-shell-list-shell)
+    (define-key map "q"                 'auto-close-shell-list-quit)
     map))
 
 (define-derived-mode auto-close-shell-list-mode tabulated-list-mode "Shell List"
   "Major mode for shell buffer list."
   :interactive nil
   (setq tabulated-list-format [("Name" 12 t)
-			       ("PID" 8 t)
-			       ("Info" 40 t)])
+                               ("PID" 8 t)
+                               ("Info" 40 t)])
   (setq tabulated-list-sort-key (cons "Name" nil))
   (add-hook 'tabulated-list-revert-hook 'auto-close-shell-list--refresh nil t))
 
@@ -165,12 +165,12 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
       (tabulated-list-print))
     ;; find window to display
     (if-let ((window (catch 'done
-		       (dolist (b auto-close-shell-buffers)
-			 (when-let ((w (get-buffer-window b)))
-			   (throw 'done w))))))
-	(progn
-	  (select-window window)
-	  (switch-to-buffer buffer))
+                       (dolist (b auto-close-shell-buffers)
+                         (when-let ((w (get-buffer-window b)))
+                           (throw 'done w))))))
+        (progn
+          (select-window window)
+          (switch-to-buffer buffer))
       (pop-to-buffer buffer))))
 
 (defun auto-close-shell--remember (buffer)
@@ -183,7 +183,7 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
   (setq auto-close-shell-buffers (delete buffer auto-close-shell-buffers))
   ;; if remaining only one buffer, kill `auto-close-shell-list-buffer'
   (when-let ((buffer (and (= 1 (length auto-close-shell-buffers))
-			  (get-buffer auto-close-shell-list-buffer))))
+                          (get-buffer auto-close-shell-list-buffer))))
     (delete-windows-on buffer t)
     (kill-buffer buffer))
   (auto-close-shell-list-update))
@@ -192,7 +192,7 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
   "When shell PROCESS exit, kill buffer and window.
 PROCESS and EVENT are to used to call original sentinel."
   (let ((sentinel (process-get process 'auto-close-shell-original-sentinel))
-	(buffer (process-buffer process)))
+        (buffer (process-buffer process)))
     (auto-close-shell--forget buffer)
     ;; call original sentinel
     (funcall sentinel process event)
@@ -200,22 +200,22 @@ PROCESS and EVENT are to used to call original sentinel."
     (when (not (process-live-p process))
       ;; close windows first
       (if-let ((window (get-buffer-window buffer t)))
-	  (progn
-	    (delete-windows-on buffer t)
-	    (kill-buffer buffer))
-	;; kill buffer was not in window (killed in background)
-	(and auto-close-shell-kill-buffer (kill-buffer buffer))))))
+          (progn
+            (delete-windows-on buffer t)
+            (kill-buffer buffer))
+        ;; kill buffer was not in window (killed in background)
+        (and auto-close-shell-kill-buffer (kill-buffer buffer))))))
 
 (defun auto-close-func (&rest args)
   "Setup shell/term with ARGS arguments, then add sentinel chain to a process."
   (if (and (null current-prefix-arg) (> (length auto-close-shell-buffers) 1))
       (auto-close-shell-list)
     (let* ((buffer (call-interactively auto-close-shell-function args))
-	   (process (get-buffer-process buffer))
-	   (sentinel (and process (process-sentinel process))))
+           (process (get-buffer-process buffer))
+           (sentinel (and process (process-sentinel process))))
       (when (and process (not (eq sentinel 'auto-close-shell-sentinel)))
-	(process-put process 'auto-close-shell-original-sentinel sentinel)
-	(set-process-sentinel process #'auto-close-shell-sentinel))
+        (process-put process 'auto-close-shell-original-sentinel sentinel)
+        (set-process-sentinel process #'auto-close-shell-sentinel))
       (auto-close-shell--remember buffer)
       buffer)))
 
