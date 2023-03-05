@@ -36,6 +36,7 @@
 
 (defvar doc-view-poppler-program "pdftocairo")
 
+;;;###autoload
 (defun doc-view-pdf->png-converter-poppler (pdf png page callback)
   "Convert PDF to PNG by using `doc-view-poppler-program'.
 If PAGE is non-nil, convert only specified page.  CALLBACK is

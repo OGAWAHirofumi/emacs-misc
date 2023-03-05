@@ -364,6 +364,7 @@ The last argument may not copied, may used as the tail of the new list.
 
 ;; This is fragile against modification of dired.el though, this would
 ;; be realistic and better off than copying from dired.el.
+;;;###autoload
 (defun dircolors-make-font-lock-keywords ()
   "Return `font-lock-keywords' can set to `dired-font-lock-keywords'."
   (dircolors-initialize)

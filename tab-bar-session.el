@@ -85,6 +85,7 @@ Possible values are:
      (frame-parameters))
     frameset-filter-alist))
 
+;;;###autoload
 (defun tbsession-save (dirname)
   "Save tab-bar session to `tbsession-default-dirname'.
 With prefix argument \\[universal-argument], prompt for DIRNAME."
@@ -103,6 +104,7 @@ With prefix argument \\[universal-argument], prompt for DIRNAME."
     (message "Saved config to \"%s\""
              (expand-file-name desktop-base-file-name dirname))))
 
+;;;###autoload
 (defun tbsession-load (&optional dirname)
   "Load tab-bar session from `tbsession-default-dirname'.
 With prefix argument \\[universal-argument], prompt for DIRNAME."
@@ -134,6 +136,7 @@ With prefix argument \\[universal-argument], prompt for DIRNAME."
                             'face 'tbsession-line-active)
                 right-delimiter)))))
 
+;;;###autoload
 (defun tbsession-move-mode-line ()
   "Move mode line indicator to first."
   (let ((elt (assoc 'tbsession-line-style mode-line-misc-info)))
