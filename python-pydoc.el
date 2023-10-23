@@ -40,7 +40,7 @@
 
 (defcustom python-pydoc-program 'guess
   "Program used by `python-pydoc' to produce help."
-  :type '(choice (const guess :tag "Guess from shebang")
+  :type '(choice (const :tag "Guess from shebang" guess)
                  (string :tag "pydoc command"))
   :group 'python-pydoc)
 
