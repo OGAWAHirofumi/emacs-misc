@@ -28,6 +28,7 @@
   (require 'rx))
 (require 'text-property-search)
 (require 'dired)
+(require 'reveal)
 
 (defgroup pass nil
   "Support for pass major mode."
@@ -71,6 +72,10 @@
 (defcustom qrcode-program-options '("-q" "--raw")
   "Decode options for `qrcode-program'."
   :type '(repeat string))
+
+(defcustom pass-hide-password t
+  "If non-nil, hide password (first line)."
+  :type 'boolean)
 
 (defvar-local pass-all-entries nil
   "Relative path for all entries.")
@@ -227,6 +232,13 @@ If INITIAL-INPUT is non-nil, insert it in the minibuffer initially."
     (pass-next-entry)
     (recenter)))
 
+(defun pass--toggle-hide-password (overlay hide)
+  "If HIDE is non-nil, hide password (first line)."
+  (if hide
+      (overlay-put overlay 'display
+                   (propertize "****" 'face 'font-lock-doc-face))
+    (overlay-put overlay 'display nil)))
+
 (defun pass-view-file (path)
   "View an entry PATH."
   (interactive (list (pass-path-at-point)) pass-mode)
@@ -238,7 +250,14 @@ If INITIAL-INPUT is non-nil, insert it in the minibuffer initially."
           (unless (and (numberp status) (= 0 status))
             (user-error "Failed view %s" path))
           (goto-char (point-min))
-          (set-buffer-modified-p nil)))
+          (set-buffer-modified-p nil))
+        (when pass-hide-password
+          (let ((overlay (make-overlay
+                          (line-beginning-position) (line-end-position))))
+            (pass--toggle-hide-password overlay t)
+            (overlay-put overlay 'reveal-toggle-invisible
+                         #'pass--toggle-hide-password))
+          (reveal-mode)))
       (view-buffer-other-window buffer nil 'kill-buffer))))
 
 (defun pass-generate (target no-symbol &optional password-len)
