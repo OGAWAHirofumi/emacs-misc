@@ -138,12 +138,11 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
   (ignore-errors
     (delete-window)))
 
-(defvar auto-close-shell-list-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "\C-m"      'auto-close-shell-list-select)
-    (define-key map "s"                 'auto-close-shell-list-shell)
-    (define-key map "q"                 'auto-close-shell-list-quit)
-    map))
+(defvar-keymap auto-close-shell-list-mode-map
+  :doc "Keymap for auto-close-shell-list-mode."
+  "C-m" #'auto-close-shell-list-select
+  "s"   #'auto-close-shell-list-shell
+  "q"   #'auto-close-shell-list-quit)
 
 (define-derived-mode auto-close-shell-list-mode tabulated-list-mode "Shell List"
   "Major mode for shell buffer list."

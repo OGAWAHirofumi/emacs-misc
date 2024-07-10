@@ -233,18 +233,16 @@ the list of file names explicitly with the FILE-LIST argument."
   (dired-run-shell-command
    (dired-shell-stuff-it command file-list nil arg)))
 
-(defvar tracker-result-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "p"         'tracker-result-prev)
-    (define-key map "n"         'tracker-result-next)
-    (define-key map "!"         'tracker-result-run-shell-command)
-    (define-key map "d" 'tracker-result-dired)
-    (define-key map "e" 'tracker-result-find-file)
-    (define-key map "f" 'tracker-result-find-file)
-    (define-key map "\C-m" 'tracker-result-find-file)
-    (define-key map "o" 'tracker-result-find-file-other-window)
-    map)
-  "Keymap used in `tracker-result-mode'.")
+(defvar-keymap tracker-result-mode-map
+  :doc "Keymap used in `tracker-result-mode'."
+  "p"   #'tracker-result-prev
+  "n"   #'tracker-result-next
+  "!"   #'tracker-result-run-shell-command
+  "d"   #'tracker-result-dired
+  "e"   #'tracker-result-find-file
+  "f"   #'tracker-result-find-file
+  "C-m" #'tracker-result-find-file
+  "o"   #'tracker-result-find-file-other-window)
 
 (define-derived-mode tracker-result-mode special-mode "Tracker-Result"
   ""
