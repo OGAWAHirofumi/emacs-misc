@@ -52,11 +52,11 @@ Possible values are:
                  (const :tag "Hide" nil)))
 
 (defface tbsession-line-delimiters
-  '((t (nil)))
+  '((t nil))
   "Face for the mode line indicator delimiters.")
 
 (defface tbsession-line-inactive
-  '((t (nil)))
+  '((t nil))
   "Face for the inactive items of the mode line indicator.")
 
 (defface tbsession-line-active
