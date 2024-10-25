@@ -113,14 +113,14 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
 
 (defun auto-close-shell-list-update ()
   "Update a list in `auto-close-shell-list-buffer'."
-  (when-let ((buffer (get-buffer auto-close-shell-list-buffer)))
+  (when-let* ((buffer (get-buffer auto-close-shell-list-buffer)))
     (with-current-buffer buffer
       (revert-buffer))))
 
 (defun auto-close-shell-list-select ()
   "Visit shell buffer at current selected line."
   (interactive nil auto-close-shell-list-mode)
-  (when-let ((buffer (tabulated-list-get-id)))
+  (when-let* ((buffer (tabulated-list-get-id)))
     (switch-to-buffer buffer)))
 
 (defun auto-close-shell-list-shell ()
@@ -163,10 +163,10 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
       (auto-close-shell-list--refresh)
       (tabulated-list-print))
     ;; find window to display
-    (if-let ((window (catch 'done
-                       (dolist (b auto-close-shell-buffers)
-                         (when-let ((w (get-buffer-window b)))
-                           (throw 'done w))))))
+    (if-let* ((window (catch 'done
+                        (dolist (b auto-close-shell-buffers)
+                          (when-let* ((w (get-buffer-window b)))
+                            (throw 'done w))))))
         (progn
           (select-window window)
           (switch-to-buffer buffer))
@@ -181,8 +181,8 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
   "Forget shell buffer BUFFER."
   (setq auto-close-shell-buffers (delete buffer auto-close-shell-buffers))
   ;; if remaining only one buffer, kill `auto-close-shell-list-buffer'
-  (when-let ((buffer (and (= 1 (length auto-close-shell-buffers))
-                          (get-buffer auto-close-shell-list-buffer))))
+  (when-let* ((buffer (and (= 1 (length auto-close-shell-buffers))
+                           (get-buffer auto-close-shell-list-buffer))))
     (delete-windows-on buffer t)
     (kill-buffer buffer))
   (auto-close-shell-list-update))
@@ -198,7 +198,7 @@ PROCESS and EVENT are to used to call original sentinel."
     ;; start auto close
     (when (not (process-live-p process))
       ;; close windows first
-      (if-let ((window (get-buffer-window buffer t)))
+      (if-let* ((window (get-buffer-window buffer t)))
           (progn
             (delete-windows-on buffer t)
             (kill-buffer buffer))

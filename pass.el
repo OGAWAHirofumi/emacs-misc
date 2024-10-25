@@ -159,25 +159,25 @@ DEPTH is the depth of current directory."
 (defun pass-next-entry ()
   "Move cursor to next entry."
   (interactive nil pass-mode)
-  (when-let ((prop (text-property-search-forward 'pass-path nil nil t)))
+  (when-let* ((prop (text-property-search-forward 'pass-path nil nil t)))
     (goto-char (prop-match-beginning prop))))
 
 (defun pass-previous-entry ()
   "Move cursor to previous entry."
   (interactive nil pass-mode)
-  (when-let ((prop (text-property-search-backward 'pass-path nil nil t)))
+  (when-let* ((prop (text-property-search-backward 'pass-path nil nil t)))
     (goto-char (prop-match-beginning prop))))
 
 (defun pass-next-dirline ()
   "Move cursor to next directory entry."
   (interactive nil pass-mode)
-  (when-let ((prop (text-property-search-forward 'pass-type 'dir t t)))
+  (when-let* ((prop (text-property-search-forward 'pass-type 'dir t t)))
     (goto-char (prop-match-beginning prop))))
 
 (defun pass-previous-dirline ()
   "Move cursor to previous directory entry."
   (interactive nil pass-mode)
-  (when-let ((prop (text-property-search-backward 'pass-type 'dir t t)))
+  (when-let* ((prop (text-property-search-backward 'pass-type 'dir t t)))
     (goto-char (prop-match-beginning prop))))
 
 (defun pass-path-at-point ()
@@ -294,8 +294,8 @@ PASSWORD-LEN is the length of new password (25 if nil)."
     (cancel-timer pass-clip-timer)
     (setq pass-clip-timer nil))
   ;; clear clipboard and primary selection
-  (when-let ((clip-target (car pass-clip-last-save))
-             (ring-target (cdr pass-clip-last-save)))
+  (when-let* ((clip-target (car pass-clip-last-save))
+              (ring-target (cdr pass-clip-last-save)))
     (setq pass-clip-last-save nil)
     (when (equal clip-target (gui-get-selection 'PRIMARY))
       (let ((select-enable-primary t))
@@ -343,7 +343,7 @@ Return the timeout seconds of clearing a saved data."
    (list (pass-path-at-point) (prefix-numeric-value current-prefix-arg))
    pass-mode)
   (setq linenum (or linenum 1))
-  (if-let ((text (nth (1- linenum) (pass-entry-get-lines path))))
+  (if-let* ((text (nth (1- linenum) (pass-entry-get-lines path))))
       (let ((timeout (pass-clip-save text)))
         (message "Copied %s to clipboard. Will clear in %d seconds."
                  path timeout))

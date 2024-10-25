@@ -154,7 +154,7 @@ If N is positive, N times next.  If N is negative N times previous."
     (let ((match t))
       (goto-char pos)
       (when (get-text-property pos prop)
-        (when-let ((prev (previous-single-property-change pos prop)))
+        (when-let* ((prev (previous-single-property-change pos prop)))
           (goto-char prev))
         (setq match (text-property-search-forward prop t t nil)))
       (while (and match (/= n 0))
