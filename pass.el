@@ -192,7 +192,7 @@ DEPTH is the depth of current directory."
 (defun pass-run-cmd (output &rest args)
   "Call pass command with arguments ARGS.
 Output of process write to OUTPUT buffer."
-  (apply #'call-process pass-program nil output nil args))
+  (apply #'call-process pass-program nil `(,output nil) nil args))
 
 (defun pass-run-cmd-output (&rest args)
   "Call pass command with arguments ARGS, and write output to minibuffer."
