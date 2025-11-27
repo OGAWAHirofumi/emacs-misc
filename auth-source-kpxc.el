@@ -113,7 +113,7 @@ used as keyfile."
   "Wait the prompt and return the output from PROC."
   (while (not (process-get proc 'promptp))
     (when (not (process-live-p proc))
-      (error "Error: KeePassXC process exit unexpectedly" ))
+      (user-error "Error: KeePassXC process exit unexpectedly" ))
     (accept-process-output proc))
   (process-put proc 'promptp nil)
   (with-current-buffer (process-buffer proc)
@@ -160,8 +160,14 @@ used as keyfile."
      (set-process-sentinel kpxc-process #'kpxc-sentinel)
 
      ;; send password
-     (process-send-string kpxc-process (concat passwd "\n"))
-     (kpxc-get-response kpxc-process)
+     (condition-case err
+         (progn
+           (process-send-string kpxc-process (concat passwd "\n"))
+           (kpxc-get-response kpxc-process))
+       (error
+        ;; remove cache if open was failed
+        (password-cache-remove ,file)
+        (signal 'user-error (cdr err))))
 
      (unwind-protect
          (with-current-buffer (process-buffer kpxc-process)
