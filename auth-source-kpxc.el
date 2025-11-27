@@ -50,6 +50,7 @@
 ;;; Code:
 
 (require 'auth-source)
+(require 'secrets)
 (require 'password-cache)
 (eval-when-compile (require 'cl-lib))
 
@@ -84,6 +85,57 @@ used as keyfile."
 (defcustom auth-source-kpxc-command "keepassxc-cli"
   "The command to use to run keepassxc-cli."
   :type 'string)
+
+(defun auth-source-kpxc-secrets-read (key)
+  "Read PASSWD from cache for KEY."
+  (secrets-get-secret "session" key))
+
+(defun auth-source-kpxc-secrets-add (key passwd)
+  "Add PASSWD to cache for KEY."
+  (secrets-create-item "session" key passwd))
+
+(defun auth-source-kpxc-secrets-del (key)
+  "Delete cache for KEY."
+  (secrets-delete-item "session" key))
+
+(defvar auth-source-kpxc-cache-method-secrets
+  (list
+   :read #'auth-source-kpxc-secrets-read
+   :add #'auth-source-kpxc-secrets-add
+   :del #'auth-source-kpxc-secrets-del)
+  "The password cache method by `secrets'.")
+
+(defvar auth-source-kpxc-cache-method-password-cache
+  (list
+   :read #'password-read-from-cache
+   :add #'password-cache-add
+   :del #'password-cache-remove)
+  "The password cache method by `password-cache'.")
+
+(defcustom auth-source-kpxc-cache-method
+  (or (and secrets-enabled auth-source-kpxc-cache-method-secrets)
+      auth-source-kpxc-cache-method-password-cache)
+  "The method for password cache."
+  :type 'plist)
+
+(defun kpxc-read-password (file)
+  "Read the password for FILE."
+  (let ((password-cache-expiry auth-source-cache-expiry)
+        (read-func (plist-get auth-source-kpxc-cache-method :read))
+        (add-func (plist-get auth-source-kpxc-cache-method :add)))
+    (when-let* ((key (expand-file-name file)))
+      (if-let* ((passwd (funcall read-func key)))
+          passwd
+        (setq passwd (read-passwd (format "Enter Password (%s): " file)))
+        (funcall add-func key passwd)
+        passwd))))
+
+(defun kpxc-delete-password (file)
+  "Delete the password cache for FILE."
+  (let ((password-cache-expiry auth-source-cache-expiry)
+        (key (expand-file-name file))
+        (del-func (plist-get auth-source-kpxc-cache-method :del)))
+    (funcall del-func key)))
 
 (defvar kpxc-process nil)
 
@@ -131,15 +183,6 @@ used as keyfile."
           (buffer-substring start end)
         (erase-buffer)))))
 
-(defun kpxc-read-password (file)
-  "Read the password for FILE."
-  (let ((password-cache-expiry auth-source-cache-expiry))
-    (when-let* ((key (expand-file-name file))
-                (passwd (password-read
-                         (format "Enter Password (%s): " file) key)))
-      (password-cache-add key passwd)
-      passwd)))
-
 (defmacro with-kpxc-process (file &rest body)
   "Execute the forms in BODY with KeePassXC client session for FILE."
   (declare (indent 1) (debug t))
@@ -166,7 +209,7 @@ used as keyfile."
            (kpxc-get-response kpxc-process))
        (error
         ;; remove cache if open was failed
-        (password-cache-remove ,file)
+        (kpxc-delete-password ,file)
         (signal 'user-error (cdr err))))
 
      (unwind-protect
