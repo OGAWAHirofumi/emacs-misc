@@ -166,7 +166,7 @@ used as keyfile."
   (while (not (process-get proc 'promptp))
     (when (not (process-live-p proc))
       (user-error "Error: KeePassXC process exit unexpectedly" ))
-    (accept-process-output proc))
+    (accept-process-output))
   (process-put proc 'promptp nil)
   (with-current-buffer (process-buffer proc)
     (let ((start (progn
