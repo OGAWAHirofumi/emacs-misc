@@ -86,24 +86,24 @@ used as keyfile."
   "The command to use to run keepassxc-cli."
   :type 'string)
 
-(defun auth-source-kpxc-secrets-read (key)
-  "Read PASSWD from cache for KEY."
+(defun auth-source-kpxc-secrets-session-read (key)
+  "Read passwd from cache for KEY."
   (secrets-get-secret "session" key))
 
-(defun auth-source-kpxc-secrets-add (key passwd)
+(defun auth-source-kpxc-secrets-session-add (key passwd)
   "Add PASSWD to cache for KEY."
   (secrets-create-item "session" key passwd))
 
-(defun auth-source-kpxc-secrets-del (key)
+(defun auth-source-kpxc-secrets-session-del (key)
   "Delete cache for KEY."
   (secrets-delete-item "session" key))
 
-(defvar auth-source-kpxc-cache-method-secrets
+(defvar auth-source-kpxc-cache-method-secrets-session
   (list
-   :read #'auth-source-kpxc-secrets-read
-   :add #'auth-source-kpxc-secrets-add
-   :del #'auth-source-kpxc-secrets-del)
-  "The password cache method by `secrets'.")
+   :read #'auth-source-kpxc-secrets-session-read
+   :add #'auth-source-kpxc-secrets-session-add
+   :del #'auth-source-kpxc-secrets-session-del)
+  "The password cache method by `secrets' session.")
 
 (defvar auth-source-kpxc-cache-method-password-cache
   (list
@@ -113,7 +113,7 @@ used as keyfile."
   "The password cache method by `password-cache'.")
 
 (defcustom auth-source-kpxc-cache-method
-  (or (and secrets-enabled auth-source-kpxc-cache-method-secrets)
+  (or (and secrets-enabled auth-source-kpxc-cache-method-secrets-session)
       auth-source-kpxc-cache-method-password-cache)
   "The method for password cache."
   :type 'plist)
