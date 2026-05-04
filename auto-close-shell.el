@@ -192,18 +192,19 @@ BUFFER and FILE-NAME are same meaning with `shell' arguments."
 PROCESS and EVENT are to used to call original sentinel."
   (let ((sentinel (process-get process 'auto-close-shell-original-sentinel))
         (buffer (process-buffer process)))
-    (auto-close-shell--forget buffer)
-    ;; call original sentinel
-    (funcall sentinel process event)
-    ;; start auto close
-    (when (not (process-live-p process))
-      ;; close windows first
-      (if-let* ((window (get-buffer-window buffer t)))
-          (progn
-            (delete-windows-on buffer t)
-            (kill-buffer buffer))
-        ;; kill buffer was not in window (killed in background)
-        (and auto-close-shell-kill-buffer (kill-buffer buffer))))))
+    (let ((window (get-buffer-window buffer t)))
+      (auto-close-shell--forget buffer)
+      (when (and window (not (process-live-p process)))
+        ;; close windows first
+        (delete-windows-on buffer t))
+      ;; call original sentinel (this may kill buffer)
+      (funcall sentinel process event)
+      ;; kill buffer finally
+      (when (not (process-live-p process))
+        (if window
+            (kill-buffer buffer)
+          ;; kill buffer was not in window (killed in background)
+          (and auto-close-shell-kill-buffer (kill-buffer buffer)))))))
 
 (defun auto-close-func (&rest args)
   "Setup shell/term with ARGS arguments, then add sentinel chain to a process."
