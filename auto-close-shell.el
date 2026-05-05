@@ -213,7 +213,9 @@ PROCESS and EVENT are to used to call original sentinel."
     (let* ((buffer (call-interactively auto-close-shell-function args))
            (process (get-buffer-process buffer))
            (sentinel (and process (process-sentinel process))))
-      (when (and process (not (eq sentinel 'auto-close-shell-sentinel)))
+      (when (and process (null (process-get
+                                process
+                                'auto-close-shell-original-sentinel)))
         (process-put process 'auto-close-shell-original-sentinel sentinel)
         (set-process-sentinel process #'auto-close-shell-sentinel))
       (auto-close-shell--remember buffer)
