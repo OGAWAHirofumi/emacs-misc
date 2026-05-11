@@ -486,8 +486,9 @@ See `auth-source-search' for details on SPEC."
          :create-function #'ignore))))))
 
 ;;;###autoload
+;; Add this before `auth-source-backends-parser-file'
 (add-hook 'auth-source-backend-parser-functions
-          #'auth-source-backends-parser-kpxc)
+          #'auth-source-backends-parser-kpxc -1)
 
 (provide 'auth-source-kpxc)
 ;;; auth-source-kpxc.el ends here
